@@ -2,13 +2,14 @@ package com.xyroo.zigorasecure
 
 import android.annotation.SuppressLint
 import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
-import android.view.WindowManager
+import android.util.Log
+import android.view.View
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.appcompat.app.AppCompatActivity
-import rikka.shizuku.Shizuku
 import java.io.BufferedReader
 import java.io.InputStreamReader
 
@@ -16,41 +17,44 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var webView: WebView
     private val SHIZUKU_REQUEST_CODE = 1001
+    private val TAG = "ZigoraSecure"
 
-    private val permissionListener = Shizuku.OnRequestPermissionResultListener { _, grantResult ->
-        val granted = grantResult == PackageManager.PERMISSION_GRANTED
-        runOnUiThread {
-            webView.evaluateJavascript(
-                "window.__shizukuPermissionResult && window.__shizukuPermissionResult($granted)",
-                null
-            )
-        }
-    }
-
-    private val binderListener = Shizuku.OnBinderReceivedListener {
-        // Shizuku service tersambung
-    }
+    // Shizuku diakses sepenuhnya lewat reflection supaya app TIDAK CRASH
+    // sama sekali kalau Shizuku belum terinstall / belum running / API berubah.
+    private var shizukuOk = false
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Fullscreen / edge-to-edge agar terasa native
-        window.setFlags(
-            WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
-            WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
-        )
+        // Edge-to-edge sederhana & aman, tanpa flag berisiko
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                window.setDecorFitsSystemWindows(false)
+            } else {
+                @Suppress("DEPRECATION")
+                window.decorView.systemUiVisibility =
+                    View.SYSTEM_UI_FLAG_LAYOUT_STABLE or
+                    View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+            }
+        } catch (e: Throwable) {
+            Log.w(TAG, "edge-to-edge setup failed, continuing normally", e)
+        }
 
         webView = WebView(this)
         setContentView(webView)
 
-        webView.settings.apply {
-            javaScriptEnabled = true
-            domStorageEnabled = true
-            allowFileAccess = true
-            allowContentAccess = true
-            cacheMode = android.webkit.WebSettings.LOAD_DEFAULT
-            mediaPlaybackRequiresUserGesture = false
+        try {
+            webView.settings.apply {
+                javaScriptEnabled = true
+                domStorageEnabled = true
+                allowFileAccess = true
+                allowContentAccess = true
+                cacheMode = android.webkit.WebSettings.LOAD_DEFAULT
+                mediaPlaybackRequiresUserGesture = false
+            }
+        } catch (e: Throwable) {
+            Log.e(TAG, "WebView settings failed", e)
         }
 
         webView.webViewClient = WebViewClient()
@@ -58,37 +62,64 @@ class MainActivity : AppCompatActivity() {
 
         webView.loadUrl("file:///android_asset/webroot/index.html")
 
-        Shizuku.addBinderReceivedListenerSticky(binderListener)
-        Shizuku.addRequestPermissionResultListener(permissionListener)
+        // Inisialisasi Shizuku TIDAK BOLEH bikin app crash apapun yang terjadi
+        initShizukuSafely()
     }
 
-    override fun onDestroy() {
-        Shizuku.removeBinderReceivedListener(binderListener)
-        Shizuku.removeRequestPermissionResultListener(permissionListener)
-        super.onDestroy()
-    }
+    private fun initShizukuSafely() {
+        try {
+            val shizukuClass = Class.forName("rikka.shizuku.Shizuku")
 
-    override fun onBackPressed() {
-        // Biarkan JS handle back navigation dulu (lihat history.popstate di index.html)
-        if (webView.canGoBack().not()) {
-            // Tidak ada history WebView untuk di-back — biarkan app exit normal
-            super.onBackPressed()
-        } else {
-            webView.goBack()
+            // Daftarkan listener lewat reflection, dibungkus try-catch penuh
+            try {
+                val listenerInterface = Class.forName("rikka.shizuku.Shizuku\$OnBinderReceivedListener")
+                val proxy = java.lang.reflect.Proxy.newProxyInstance(
+                    listenerInterface.classLoader,
+                    arrayOf(listenerInterface)
+                ) { _, _, _ -> null }
+                val addMethod = shizukuClass.getMethod(
+                    "addBinderReceivedListenerSticky",
+                    listenerInterface
+                )
+                addMethod.invoke(null, proxy)
+            } catch (e: Throwable) {
+                Log.w(TAG, "Shizuku binder listener skip", e)
+            }
+
+            shizukuOk = true
+            Log.i(TAG, "Shizuku class found, basic init ok")
+        } catch (e: ClassNotFoundException) {
+            Log.w(TAG, "Shizuku library not found / not linked properly")
+            shizukuOk = false
+        } catch (e: Throwable) {
+            Log.w(TAG, "Shizuku init failed safely, app continues", e)
+            shizukuOk = false
         }
     }
 
+    override fun onBackPressed() {
+        try {
+            if (webView.canGoBack()) {
+                webView.goBack()
+                return
+            }
+        } catch (_: Throwable) { }
+        super.onBackPressed()
+    }
+
     /**
-     * Jembatan JS -> Shizuku.
-     * Dipanggil dari index.html lewat window.AndroidShell.exec(cmd)
-     * Menggantikan window.ksu.exec() / window.axeron.exec() versi Magisk module.
+     * Jembatan JS -> Shizuku. Semua method dibungkus try-catch penuh
+     * supaya kalau Shizuku tidak ada / belum permission, JS dapat hasil
+     * kosong/false dengan rapi — TIDAK PERNAH crash app.
      */
     inner class ShizukuBridge {
 
         @JavascriptInterface
         fun isShizukuAvailable(): Boolean {
             return try {
-                Shizuku.pingBinder()
+                val clazz = Class.forName("rikka.shizuku.Shizuku")
+                val method = clazz.getMethod("pingBinder")
+                method.invoke(null) as? Boolean ?: false
             } catch (e: Throwable) {
                 false
             }
@@ -97,7 +128,10 @@ class MainActivity : AppCompatActivity() {
         @JavascriptInterface
         fun hasPermission(): Boolean {
             return try {
-                Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED
+                val clazz = Class.forName("rikka.shizuku.Shizuku")
+                val method = clazz.getMethod("checkSelfPermission")
+                val result = method.invoke(null) as Int
+                result == PackageManager.PERMISSION_GRANTED
             } catch (e: Throwable) {
                 false
             }
@@ -106,20 +140,18 @@ class MainActivity : AppCompatActivity() {
         @JavascriptInterface
         fun requestPermission() {
             try {
-                if (Shizuku.checkSelfPermission() != PackageManager.PERMISSION_GRANTED) {
-                    Shizuku.requestPermission(SHIZUKU_REQUEST_CODE)
+                val clazz = Class.forName("rikka.shizuku.Shizuku")
+                val checkMethod = clazz.getMethod("checkSelfPermission")
+                val current = checkMethod.invoke(null) as Int
+                if (current != PackageManager.PERMISSION_GRANTED) {
+                    val reqMethod = clazz.getMethod("requestPermission", Int::class.java)
+                    reqMethod.invoke(null, SHIZUKU_REQUEST_CODE)
                 }
             } catch (e: Throwable) {
-                // Shizuku service belum jalan
+                Log.w(TAG, "requestPermission failed", e)
             }
         }
 
-        /**
-         * Eksekusi shell command lewat Shizuku.
-         * Shizuku.newProcess() bersifat hidden/deprecated tapi masih satu-satunya cara
-         * simpel untuk run command tanpa bikin UserService terpisah. Dipanggil via
-         * reflection supaya tidak error compile time di versi Shizuku manapun.
-         */
         @JavascriptInterface
         fun exec(cmd: String): String {
             if (!isShizukuAvailable()) return ""
@@ -138,7 +170,7 @@ class MainActivity : AppCompatActivity() {
                     arrayOf("sh", "-c", cmd),
                     null,
                     null
-                )
+                ) ?: return ""
 
                 val inputStreamGetter = process.javaClass.getMethod("getInputStream")
                 val inputStream = inputStreamGetter.invoke(process) as java.io.InputStream
@@ -163,6 +195,7 @@ class MainActivity : AppCompatActivity() {
 
                 output.toString()
             } catch (e: Throwable) {
+                Log.w(TAG, "exec failed: $cmd", e)
                 ""
             }
         }
