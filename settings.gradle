@@ -1,0 +1,2 @@
+rootProject.name = "Zigora-Secure"
+include ':app'

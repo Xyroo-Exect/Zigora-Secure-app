@@ -1,0 +1,1868 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>Zigora-Secure</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,1,0&display=swap" rel="stylesheet">
+<style>
+@import "https://mui.kernelsu.org/internal/insets.css";
+:root{
+  --bg:#08050f;
+  --bg2:#120a24;
+  --ac:#a855f7;--ac2:#7c3aed;--ac3:#d8b4fe;
+  --pu:#c084fc;--pu2:#6d28d9;
+  --hi:#f5edff;--lo:rgba(237,225,255,0.40);
+  --bdr:rgba(168,85,247,0.20);--bdr-h:rgba(192,132,252,0.50);
+  --s0:rgba(255,255,255,0.025);--s1:rgba(168,85,247,0.07);
+  --glow:rgba(168,85,247,0.32);
+  --grn:#22e58f;--grn-d:rgba(34,229,143,0.13);
+  --red:#ff5470;--red-d:rgba(255,84,112,0.13);
+  --r:16px;--r-sm:11px;--ease:cubic-bezier(.4,0,.2,1);
+  --inset-top:var(--window-inset-top,0px);
+  --nav-h:60px;
+  --card-grad:linear-gradient(155deg,rgba(168,85,247,0.10),rgba(192,132,252,0.03) 60%,rgba(255,255,255,0.015));
+  --shadow-card:0 8px 24px -8px rgba(0,0,0,0.55);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;
+  -webkit-touch-callout:none;-webkit-user-select:none;user-select:none;}
+input,textarea{-webkit-user-select:text;user-select:text;}
+:root{--status-bar-h:env(safe-area-inset-top,0px);}
+html{-webkit-overflow-scrolling:touch;overscroll-behavior:none;}
+body{overscroll-behavior:none;touch-action:pan-y;}
+
+/* App-like ripple effect on tap */
+.ripple-wrap{position:relative;overflow:hidden;}
+.ripple{
+  position:absolute;border-radius:50%;background:rgba(255,255,255,0.35);
+  transform:scale(0);pointer-events:none;animation:rippleAnim .55s var(--ease);
+}
+@keyframes rippleAnim{to{transform:scale(2.6);opacity:0;}}
+
+/* App-like page slide transition */
+.page{will-change:transform,opacity;}
+.page.slide-in{animation:pageSlideIn .28s var(--ease);}
+@keyframes pageSlideIn{from{opacity:0;transform:translateY(14px) scale(.985);}to{opacity:1;transform:translateY(0) scale(1);}}
+
+/* Status bar scrim (app-like) */
+.status-scrim{
+  position:fixed;top:0;left:0;right:0;height:var(--status-bar-h);
+  background:#08050f;z-index:50;pointer-events:none;
+}
+html,body{height:100%;overflow:hidden;background:radial-gradient(circle at 50% -10%,#1e1040 0%,var(--bg) 45%,#020108 100%);}
+body{font-family:'Inter',sans-serif;color:var(--hi);position:relative;}
+
+/* ── CANVAS BG ── */
+#bgCanvas{position:fixed;inset:0;z-index:0;pointer-events:none;}
+
+/* ── SPLASH ── */
+#splash{
+  position:fixed;inset:0;z-index:999;background:#08050f;overflow:hidden;
+  display:none;flex-direction:column;align-items:center;justify-content:center;gap:20px;
+  transition:opacity .6s var(--ease);
+}
+#splash.boot{display:flex;}
+#splash.hide{opacity:0;pointer-events:none;}
+#splashVideo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
+  opacity:.55;filter:saturate(1.2) brightness(.75);}
+.splash-ov{position:absolute;inset:0;
+  background:radial-gradient(circle at 50% 40%,rgba(124,58,237,0.15) 0%,rgba(8,5,15,.55) 55%,rgba(8,5,15,.96) 100%);}
+.splash-content{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;gap:20px;}
+.sp-ring{
+  width:70px;height:70px;border-radius:50%;
+  border:2px solid rgba(168,85,247,0.18);border-top:2px solid var(--ac);
+  animation:spin 1.2s linear infinite;
+  position:relative;display:flex;align-items:center;justify-content:center;
+}
+.sp-ring::after{
+  content:'';position:absolute;inset:6px;border-radius:50%;
+  border:2px solid rgba(168,85,247,0.10);border-bottom:2px solid var(--ac3);
+  animation:spin 1.8s linear infinite reverse;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.sp-name{font-family:'Orbitron',monospace;font-size:18px;font-weight:900;
+  color:var(--ac);letter-spacing:3px;text-shadow:0 0 20px var(--glow);}
+.sp-sub{font-size:10px;color:var(--lo);letter-spacing:4px;}
+.sp-bar{width:160px;height:1px;background:rgba(255,255,255,0.06);border-radius:9999px;overflow:hidden;}
+.sp-fill{height:100%;width:0;background:linear-gradient(90deg,var(--ac2),var(--ac),var(--ac3));box-shadow:0 0 8px var(--ac);}
+
+
+/* ══════════ DISPLAY PAGE ══════════ */
+.disp-preview{
+  width:100%;border-radius:var(--r);border:1px solid var(--bdr);
+  background:var(--card-grad);box-shadow:var(--shadow-card);
+  margin-bottom:14px;overflow:hidden;position:relative;
+}
+.disp-preview-screen{
+  width:100%;aspect-ratio:9/16;background:#010108;display:flex;
+  align-items:center;justify-content:center;flex-direction:column;gap:10px;
+  position:relative;overflow:hidden;
+}
+.disp-preview-screen::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse at 50% 30%,rgba(168,85,247,0.12),transparent 70%);
+}
+.disp-mock{
+  width:55%;aspect-ratio:9/16;border-radius:12px;border:2px solid rgba(168,85,247,0.35);
+  background:linear-gradient(160deg,rgba(168,85,247,0.08),rgba(124,58,237,0.03));
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+  box-shadow:0 0 20px rgba(168,85,247,0.15);position:relative;transition:all .4s var(--ease);
+}
+.disp-mock-res{font-family:'Orbitron',monospace;font-size:11px;font-weight:700;color:var(--ac3);letter-spacing:1px;}
+.disp-mock-dpi{font-size:10px;color:var(--lo);}
+.disp-mock-dot{width:6px;height:6px;border-radius:50%;background:var(--ac);box-shadow:0 0 8px var(--ac);margin-bottom:4px;}
+.disp-preview-bar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 14px;border-top:1px solid var(--bdr);background:rgba(0,0,0,.3);
+}
+.disp-preview-lbl{font-size:9px;color:var(--lo);letter-spacing:1px;font-family:'Orbitron',monospace;}
+.disp-preview-val{font-family:'Orbitron',monospace;font-size:10px;color:var(--ac3);font-weight:700;}
+.disp-badge{
+  position:absolute;top:8px;right:8px;font-size:8px;padding:3px 8px;
+  border-radius:9999px;border:1px solid;letter-spacing:1px;font-family:'Orbitron',monospace;
+}
+.disp-badge.changed{color:#f59e0b;border-color:rgba(245,158,11,.4);background:rgba(245,158,11,.08);}
+.disp-badge.applied{color:var(--grn);border-color:rgba(34,229,143,.4);background:rgba(34,229,143,.08);}
+.disp-badge.default{color:var(--lo);border-color:var(--bdr);}
+
+/* Preset grid */
+.preset-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;}
+.preset-chip{
+  padding:10px 6px;border-radius:10px;border:1px solid var(--bdr);
+  background:var(--card-grad);text-align:center;cursor:pointer;
+  transition:border-color .2s,background .2s,transform .12s;
+  -webkit-tap-highlight-color:transparent;box-shadow:var(--shadow-card);
+}
+.preset-chip:active{transform:scale(.95);}
+.preset-chip.sel{border-color:var(--ac);background:rgba(168,85,247,0.12);}
+.preset-chip .pc-name{font-family:'Orbitron',monospace;font-size:9px;font-weight:700;color:var(--hi);letter-spacing:.5px;}
+.preset-chip .pc-res{font-size:9px;color:var(--lo);margin-top:2px;}
+.preset-chip .pc-dpi{font-size:8px;color:var(--ac3);margin-top:1px;}
+
+/* Number input card */
+.disp-input-card{
+  background:var(--card-grad);border:1px solid var(--bdr);border-radius:var(--r-sm);
+  padding:14px;margin-bottom:10px;box-shadow:var(--shadow-card);
+}
+.disp-input-row{display:flex;align-items:center;gap:8px;}
+.disp-input-wrap{flex:1;display:flex;flex-direction:column;gap:5px;}
+.disp-input-lbl{font-size:9px;color:var(--lo);letter-spacing:1.5px;font-family:'Orbitron',monospace;}
+.disp-input-inner{
+  display:flex;align-items:center;gap:8px;
+  background:rgba(0,0,0,.25);border:1px solid var(--bdr-h);border-radius:10px;padding:10px 11px;
+  transition:border-color .2s,box-shadow .2s;
+}
+.disp-input-inner:focus-within{border-color:var(--ac);box-shadow:0 0 0 3px rgba(168,85,247,0.15);}
+.disp-input-icon{font-size:16px;color:var(--ac3);flex-shrink:0;}
+.disp-num-input{
+  flex:1;background:none;border:none;outline:none;
+  font-family:'Orbitron',monospace;font-size:16px;font-weight:700;color:var(--hi);
+  width:100%;-moz-appearance:textfield;
+}
+.disp-num-input::-webkit-outer-spin-button,
+.disp-num-input::-webkit-inner-spin-button{-webkit-appearance:none;}
+.disp-input-unit{font-size:10px;color:var(--lo);font-family:'Orbitron',monospace;flex-shrink:0;}
+.disp-x{font-family:'Orbitron',monospace;font-size:18px;font-weight:900;color:var(--ac);margin-top:18px;}
+.disp-dpi-row{display:flex;flex-direction:column;gap:10px;}
+.disp-dpi-hints{display:flex;gap:6px;flex-wrap:wrap;}
+.disp-dpi-tag{
+  padding:5px 12px;border-radius:9999px;border:1px solid var(--bdr);
+  background:rgba(168,85,247,0.07);color:var(--ac3);font-family:'Orbitron',monospace;
+  font-size:9px;cursor:pointer;transition:background .2s,border-color .2s,transform .1s;
+  -webkit-tap-highlight-color:transparent;
+}
+.disp-dpi-tag:active{transform:scale(.93);}
+.disp-dpi-tag.sel{border-color:var(--ac);background:rgba(168,85,247,0.18);color:var(--hi);}
+/* Countdown overlay */
+.disp-rings{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;}
+.disp-ring{position:absolute;border-radius:50%;border:1px solid rgba(168,85,247,0.12);}
+.disp-ring.r1{width:120px;height:120px;animation:ringPulse 3s ease-in-out infinite;}
+.disp-ring.r2{width:160px;height:160px;animation:ringPulse 3s ease-in-out infinite .8s;}
+@keyframes ringPulse{0%,100%{opacity:.6;transform:scale(1);}50%{opacity:.15;transform:scale(1.06);}}
+.disp-countdown{
+  position:absolute;inset:0;display:none;align-items:center;justify-content:center;
+  background:rgba(8,5,15,.55);backdrop-filter:blur(4px);flex-direction:column;gap:6px;z-index:2;
+}
+.disp-countdown.show{display:flex;}
+.cd-svg{width:72px;height:72px;}
+.cd-track{fill:none;stroke:rgba(168,85,247,0.18);stroke-width:3;}
+.cd-prog{fill:none;stroke:var(--ac);stroke-width:3;stroke-linecap:round;
+  stroke-dasharray:113;stroke-dashoffset:0;transform:rotate(-90deg);transform-origin:center;
+  transition:stroke-dashoffset .95s linear;}
+.cd-num{font-family:'Orbitron',monospace;font-size:28px;font-weight:900;color:var(--hi);
+  position:absolute;text-shadow:0 0 16px var(--glow);}
+
+/* Action buttons */
+.disp-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px;}
+.disp-btn{
+  padding:13px 8px;border-radius:var(--r-sm);border:none;cursor:pointer;
+  font-family:'Orbitron',monospace;font-size:11px;font-weight:700;letter-spacing:1.5px;
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  transition:transform .1s,opacity .2s;-webkit-tap-highlight-color:transparent;
+}
+.disp-btn:active{transform:scale(.96);}
+.disp-btn.apply{background:linear-gradient(135deg,var(--ac2),var(--ac) 55%,var(--pu));color:#fff;box-shadow:0 4px 22px -4px var(--glow);}
+.disp-btn.reset{background:rgba(255,84,112,0.10);color:var(--red);border:1px solid rgba(255,84,112,0.30);}
+.disp-btn .material-symbols-rounded{font-size:17px;}
+/* ── LICENSE GATE ── */
+#licenseGate{
+  position:fixed;inset:0;z-index:1000;background:#08050f;
+  display:none;flex-direction:column;align-items:center;justify-content:center;gap:18px;
+  padding:24px;text-align:center;transition:opacity .5s var(--ease);
+  background:radial-gradient(circle at 50% 30%,rgba(124,58,237,0.18) 0%,#08050f 60%);
+}
+#licenseGate.hide{opacity:0;pointer-events:none;}
+.lic-icon{width:64px;height:64px;border-radius:18px;
+  background:linear-gradient(135deg,var(--ac2) 0%,var(--ac) 60%,var(--pu) 130%);
+  display:flex;align-items:center;justify-content:center;font-size:30px;color:#fff;
+  box-shadow:0 0 24px var(--glow),inset 0 1px 1px rgba(255,255,255,0.25);}
+.lic-title{font-family:'Orbitron',monospace;font-size:16px;font-weight:900;
+  color:var(--hi);letter-spacing:3px;text-shadow:0 0 16px var(--glow);}
+.lic-sub{font-size:11px;color:var(--lo);max-width:280px;line-height:1.6;}
+.lic-input{width:100%;max-width:300px;padding:14px 16px;border-radius:var(--r-sm);
+  border:1px solid var(--bdr-h);background:rgba(255,255,255,0.03);color:var(--hi);
+  font-family:'Orbitron',monospace;font-size:13px;letter-spacing:2px;text-align:center;
+  text-transform:uppercase;outline:none;transition:border-color .2s,box-shadow .2s;}
+.lic-input:focus{border-color:var(--ac);box-shadow:0 0 0 3px var(--glow);}
+.lic-input.err{border-color:var(--red);animation:shakeX .4s var(--ease);}
+@keyframes shakeX{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
+.lic-btn{width:100%;max-width:300px;padding:14px;border-radius:var(--r-sm);
+  background:linear-gradient(135deg,var(--ac2),var(--ac) 55%,var(--pu));
+  border:none;color:#fff;font-family:'Orbitron',monospace;font-size:13px;font-weight:700;
+  letter-spacing:2px;cursor:pointer;box-shadow:0 4px 22px -2px var(--glow);
+  transition:opacity .2s,transform .1s;}
+.lic-btn:active{transform:scale(.97);}
+.lic-err{font-size:11px;color:var(--red);min-height:14px;letter-spacing:1px;}
+.lic-link{font-size:10px;color:var(--ac3);text-decoration:underline;opacity:.8;margin-top:4px;}
+
+/* ── WRAP ── */
+#wrap{position:relative;z-index:1;opacity:0;transition:opacity .4s ease;height:100vh;display:flex;flex-direction:column;}
+#wrap.show{opacity:1;}
+
+/* ── HEADER ── */
+.hdr{
+  flex-shrink:0;
+  padding:calc(12px + var(--inset-top)) 16px 10px;
+  display:flex;align-items:center;justify-content:space-between;
+  background:linear-gradient(180deg,rgba(8,14,28,0.92),rgba(4,6,15,0.78));
+  backdrop-filter:blur(16px) saturate(140%);-webkit-backdrop-filter:blur(16px) saturate(140%);
+  border-bottom:1px solid var(--bdr);
+  box-shadow:0 4px 24px -8px rgba(168,85,247,0.10);position:relative;z-index:5;
+}
+.hdr-left{display:flex;align-items:center;gap:10px;}
+.hdr-icon{
+  width:38px;height:38px;border-radius:12px;
+  background:linear-gradient(135deg,var(--ac2) 0%,var(--ac) 60%,var(--pu) 130%);
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;box-shadow:0 0 16px var(--glow),inset 0 1px 1px rgba(255,255,255,0.25);
+}
+.hdr-title{font-family:'Orbitron',monospace;font-size:14px;font-weight:700;letter-spacing:1.5px;background:linear-gradient(90deg,var(--hi),var(--ac3));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+.hdr-sub{font-size:10px;color:var(--lo);margin-top:1px;}
+.hdr-right{display:flex;align-items:center;gap:8px;}
+.pill{display:flex;align-items:center;gap:5px;padding:5px 11px;border-radius:9999px;
+  border:1px solid var(--bdr);background:linear-gradient(135deg,rgba(168,85,247,0.12),rgba(255,255,255,0.02));font-size:11px;color:var(--hi);box-shadow:inset 0 1px 1px rgba(255,255,255,0.05);}
+.dot{width:5px;height:5px;border-radius:50%;background:var(--ac);
+  box-shadow:0 0 4px var(--ac);animation:blink 2s ease infinite;}
+.dot.conflict{background:#f97316;box-shadow:0 0 4px #f97316;}
+.dot.gaming{background:var(--grn);box-shadow:0 0 6px var(--grn);}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.vtag{font-family:'Orbitron',monospace;font-size:10px;color:var(--ac3);
+  padding:3px 9px;border-radius:7px;border:1px solid var(--bdr-h);background:linear-gradient(135deg,rgba(168,85,247,0.12),transparent);}
+
+/* ── PAGES ── */
+.pages{flex:1;overflow:hidden;position:relative;}
+.page{
+  position:absolute;inset:0;
+  overflow-y:auto;overflow-x:hidden;
+  padding:14px 12px calc(var(--nav-h) + 14px);
+  -webkit-overflow-scrolling:touch;
+  opacity:0;pointer-events:none;transform:translateY(8px);
+  transition:opacity .25s var(--ease),transform .25s var(--ease);
+}
+.page.active{opacity:1;pointer-events:auto;transform:translateY(0);}
+
+/* ── BOTTOM NAV ── */
+.nav{
+  flex-shrink:0;
+  position:relative;z-index:10;
+  height:var(--nav-h);
+  display:flex;align-items:center;
+  background:linear-gradient(0deg,rgba(8,14,28,0.95),rgba(4,6,15,0.82));
+  backdrop-filter:blur(18px) saturate(140%);-webkit-backdrop-filter:blur(18px) saturate(140%);
+  border-top:1px solid var(--bdr);
+  padding:0 6px;box-shadow:0 -4px 24px -8px rgba(168,85,247,0.12);
+}
+.nav-btn{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:3px;padding:7px 4px;border-radius:12px;margin:6px 2px;
+  cursor:pointer;transition:background .25s var(--ease),transform .15s var(--ease);
+  -webkit-tap-highlight-color:transparent;
+  border:none;background:transparent;
+}
+.nav-btn:active{transform:scale(.93);}
+.nav-btn.active{background:linear-gradient(160deg,rgba(168,85,247,0.16),rgba(124,58,237,0.06));box-shadow:inset 0 1px 1px rgba(255,255,255,0.06);}
+.nav-btn .ni{font-size:20px;color:var(--lo);transition:color .2s;}
+.nav-btn.active .ni{color:var(--ac);}
+.nav-btn .nl{font-size:9px;color:var(--lo);letter-spacing:.5px;transition:color .2s;font-family:'Orbitron',monospace;}
+.nav-btn.active .nl{color:var(--ac);}
+.nav-indicator{
+  position:absolute;top:0;height:2.5px;background:linear-gradient(90deg,var(--ac2),var(--ac),var(--ac3));
+  border-radius:0 0 4px 4px;box-shadow:0 0 10px var(--ac);
+  transition:left .25s var(--ease),width .25s var(--ease);
+}
+
+/* ── HERO ── */
+.hero{
+  width:100%;height:182px;border-radius:var(--r);
+  background:linear-gradient(135deg,rgba(124,58,237,.40),rgba(124,58,237,.12));
+  border:1px solid var(--bdr);overflow:hidden;position:relative;margin-bottom:16px;
+  box-shadow:var(--shadow-card),inset 0 0 0 1px rgba(255,255,255,0.03);
+  display:flex;flex-direction:column;justify-content:space-between;
+}
+.hero-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 30%;}
+.hero-ov{
+  position:absolute;inset:0;
+  background:linear-gradient(to right,rgba(3,5,13,.65) 0%,transparent 45%,transparent 60%,rgba(3,5,13,.55) 100%),
+             linear-gradient(to top,rgba(3,5,13,.92) 0%,rgba(3,5,13,.15) 55%,transparent 100%);
+}
+.hero-top{position:relative;z-index:1;padding:14px 16px 0;}
+.hero-badge{font-family:'Orbitron',monospace;font-size:14px;font-weight:900;
+  color:var(--ac3);letter-spacing:3px;text-shadow:0 0 16px var(--ac);}
+.hero-sub{font-size:9px;color:var(--lo);letter-spacing:1.5px;margin-top:3px;}
+
+.hero-mode{
+  position:relative;z-index:1;display:flex;align-items:center;gap:9px;
+  margin:0 10px 10px;padding:11px 15px;border-radius:var(--r-sm);
+  background:rgba(8,14,28,0.55);border:1px solid var(--bdr-h);
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  box-shadow:0 4px 18px -4px rgba(0,0,0,.5);
+}
+.hero-mode.gaming{border-color:rgba(34,229,143,0.4);animation:pulseGlow 2.4s ease-in-out infinite;color:var(--grn);}
+.mode-icon{font-size:17px;color:var(--ac);}
+.hero-mode.gaming .mode-icon{color:var(--grn);}
+.mode-txt{font-family:'Orbitron',monospace;font-size:10px;color:var(--ac);letter-spacing:2px;}
+.hero-mode.gaming .mode-txt{color:var(--grn);}
+.mode-r{margin-left:auto;font-size:10px;color:var(--lo);font-family:'Orbitron',monospace;
+  padding:3px 9px;border-radius:9999px;border:1px solid var(--bdr);background:rgba(255,255,255,0.03);}
+
+/* ── SEC HEADER ── */
+.sec-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.sec-lbl{font-family:'Orbitron',monospace;font-size:8px;letter-spacing:3px;color:var(--ac3);opacity:.55;position:relative;padding-left:10px;}
+.sec-lbl::before{content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);width:4px;height:4px;border-radius:50%;background:var(--ac);box-shadow:0 0 6px var(--ac);}
+.sec-val{font-family:'Orbitron',monospace;font-size:11px;font-weight:700;color:var(--hi);}
+
+/* ── CPU CARD ── */
+.cpu-card{background:var(--card-grad);border:1px solid var(--bdr);border-radius:var(--r);padding:16px;margin-bottom:16px;box-shadow:var(--shadow-card);}
+.cpu-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px;}
+.cpu-freq{font-family:'Orbitron',monospace;font-size:28px;font-weight:900;
+  color:var(--ac);line-height:1;text-shadow:0 0 16px var(--glow);}
+.cpu-freq span{font-size:14px;}
+.cpu-meta{font-size:10px;color:var(--lo);margin-top:4px;}
+.cpu-pct-big{font-family:'Orbitron',monospace;font-size:26px;font-weight:900;color:var(--hi);line-height:1;}
+#cpuCvs{display:block;width:100%;height:68px;border-radius:8px;border:1px solid rgba(168,85,247,0.10);}
+.divider{height:1px;background:linear-gradient(90deg,transparent,var(--bdr),transparent);margin:12px 0;}
+.core-list{display:flex;flex-direction:column;gap:5px;}
+.core-row{display:flex;align-items:center;gap:8px;}
+.core-n{font-family:'Orbitron',monospace;font-size:8px;color:var(--ac);opacity:.6;min-width:14px;}
+.core-mhz{font-size:10px;color:var(--hi);min-width:54px;white-space:nowrap;}
+.core-trk{flex:1;height:4px;background:rgba(255,255,255,0.06);border-radius:9999px;overflow:hidden;}
+.core-fill{height:100%;border-radius:inherit;
+  background:linear-gradient(90deg,var(--ac2),var(--ac),var(--ac3));
+  transition:width .5s var(--ease);box-shadow:0 0 4px rgba(168,85,247,.35);}
+.core-pct{font-size:9px;color:var(--lo);min-width:28px;text-align:right;}
+
+/* ── SYS GRID ── */
+.sys-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px;}
+.tile{background:var(--card-grad);border:1px solid var(--bdr);border-radius:var(--r-sm);
+  padding:12px 9px;position:relative;overflow:hidden;box-shadow:var(--shadow-card);transition:border-color .2s,transform .15s;}
+.tile:active{transform:scale(.96);}
+.tile::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--tile-ac,var(--ac)),transparent);opacity:.5;}
+.tile:nth-child(1){--tile-ac:#a855f7;}
+.tile:nth-child(2){--tile-ac:#7c3aed;}
+.tile:nth-child(3){--tile-ac:#f97316;}
+.tile:nth-child(4){--tile-ac:#22e58f;}
+.tile:nth-child(5){--tile-ac:#f472b6;}
+.tile:nth-child(6){--tile-ac:#60a5fa;}
+.tile:nth-child(1) .tile-icon{color:#a855f7;}
+.tile:nth-child(2) .tile-icon{color:#7c3aed;}
+.tile:nth-child(3) .tile-icon{color:#f97316;}
+.tile:nth-child(4) .tile-icon{color:#22e58f;}
+.tile:nth-child(5) .tile-icon{color:#f472b6;}
+.tile:nth-child(6) .tile-icon{color:#60a5fa;}
+.tile-icon{font-size:18px;color:var(--ac);margin-bottom:6px;}
+.tile-val{font-family:'Orbitron',monospace;font-size:14px;font-weight:700;color:var(--hi);line-height:1;white-space:nowrap;}
+.tile-key{font-size:8px;color:var(--lo);letter-spacing:1px;margin:3px 0 6px;}
+.tile-bar{height:2px;background:rgba(255,255,255,0.06);border-radius:9999px;overflow:hidden;}
+.tile-fill{height:100%;border-radius:inherit;transition:width .6s var(--ease);
+  background:linear-gradient(90deg,var(--ac2),var(--ac3));}
+.tile-fill-w{background:linear-gradient(90deg,var(--ac),#f97316);}
+.tile-fill-g{background:linear-gradient(90deg,#4ade80,var(--ac3));}
+
+/* ── INFO CARD ── */
+.info-card{background:var(--card-grad);border:1px solid var(--bdr);border-radius:var(--r);margin-bottom:16px;overflow:hidden;box-shadow:var(--shadow-card);}
+.info-row{display:flex;justify-content:space-between;align-items:center;
+  padding:11px 14px;border-bottom:1px solid rgba(255,255,255,0.04);}
+.info-row:last-child{border-bottom:none;}
+.info-k{font-size:11px;color:var(--lo);}
+.info-v{font-size:11px;color:var(--hi);font-weight:500;text-align:right;max-width:55%;word-break:break-all;}
+.info-v.mono{font-family:'Orbitron',monospace;font-size:9px;}
+.info-v.ac{color:var(--ac);}
+
+/* ── SPEC GRID (Device/Engine) ── */
+.spec-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;}
+.spec-chip{background:var(--card-grad);border:1px solid var(--bdr);border-radius:var(--r-sm);
+  padding:11px 12px;box-shadow:var(--shadow-card);display:flex;flex-direction:column;gap:4px;min-width:0;}
+.spec-chip .sc-top{display:flex;align-items:center;gap:6px;}
+.spec-chip .sc-top .material-symbols-rounded{font-size:14px;color:var(--ac);opacity:.8;}
+.spec-chip .sc-k{font-size:9px;color:var(--lo);letter-spacing:1px;}
+.spec-chip .sc-v{font-size:12px;font-weight:600;color:var(--hi);word-break:break-all;}
+.spec-chip .sc-v.mono{font-family:'Orbitron',monospace;font-size:10px;}
+.spec-chip .sc-v.ac{color:var(--ac3);}
+.spec-chip.wide{grid-column:1/-1;}
+
+/* ── PAGE HEADER (DNS/EXTRAS) ── */
+.page-hero{display:flex;align-items:center;gap:12px;margin-bottom:18px;padding:4px 2px;}
+.page-hero-icon{width:46px;height:46px;border-radius:14px;flex-shrink:0;
+  background:linear-gradient(135deg,var(--ac2) 0%,var(--ac) 60%,var(--pu) 130%);
+  display:flex;align-items:center;justify-content:center;font-size:22px;color:#fff;
+  box-shadow:0 0 18px var(--glow),inset 0 1px 1px rgba(255,255,255,0.25);}
+.page-hero-title{font-family:'Orbitron',monospace;font-size:15px;font-weight:900;color:var(--hi);letter-spacing:1px;}
+.page-hero-sub{font-size:10px;color:var(--lo);margin-top:2px;letter-spacing:.5px;}
+
+/* ── EXT CARD (Extras page) ── */
+.ext-card{background:var(--card-grad);border:1px solid var(--bdr);border-radius:var(--r);
+  padding:6px 16px;margin-bottom:16px;box-shadow:var(--shadow-card);}
+.ext-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 0;}
+.ext-row+.ext-row{border-top:1px solid rgba(255,255,255,0.05);}
+.ext-info{display:flex;align-items:flex-start;gap:12px;min-width:0;flex:1;}
+.ext-icon-wrap{width:38px;height:38px;border-radius:11px;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(135deg,rgba(168,85,247,0.18),rgba(192,132,252,0.05));border:1px solid var(--bdr);}
+.ext-icon-wrap .material-symbols-rounded{font-size:19px;color:var(--ac3);}
+.ext-title{font-size:13px;font-weight:600;color:var(--hi);}
+.ext-desc{font-size:10.5px;color:var(--lo);margin-top:3px;line-height:1.5;}
+.ext-action-btn{padding:9px 18px;border-radius:9999px;border:1px solid var(--bdr-h);
+  background:linear-gradient(135deg,rgba(168,85,247,0.18),rgba(192,132,252,0.06));
+  color:var(--ac3);font-family:'Orbitron',monospace;font-size:10px;font-weight:700;letter-spacing:1.5px;
+  cursor:pointer;flex-shrink:0;transition:transform .1s,opacity .2s;-webkit-tap-highlight-color:transparent;}
+.ext-action-btn:active{transform:scale(.94);}
+.ext-action-btn:disabled{opacity:.45;pointer-events:none;}
+
+/* ── SLIDER CARD ── */
+.slider-card{padding:16px 0;}
+.slider-card .ext-info{margin-bottom:12px;}
+.slider-track{width:100%;-webkit-appearance:none;appearance:none;height:5px;border-radius:9999px;
+  background:linear-gradient(90deg,var(--ac2),var(--ac),var(--pu));outline:none;cursor:pointer;}
+.slider-track::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:20px;height:20px;border-radius:50%;
+  background:#fff;border:3px solid var(--ac);box-shadow:0 0 10px var(--glow);cursor:pointer;}
+.slider-track::-moz-range-thumb{width:20px;height:20px;border-radius:50%;
+  background:#fff;border:3px solid var(--ac);box-shadow:0 0 10px var(--glow);cursor:pointer;}
+.slider-labels{display:flex;justify-content:space-between;margin-top:9px;}
+.slider-labels span{font-size:8.5px;color:var(--lo);font-family:'Orbitron',monospace;letter-spacing:.5px;}
+
+/* ── MAINTENANCE GRID ── */
+.maint-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;}
+.maint-card{background:var(--card-grad);border:1px solid var(--bdr);border-radius:var(--r);
+  padding:16px 14px;box-shadow:var(--shadow-card);display:flex;flex-direction:column;gap:10px;
+  transition:border-color .2s,transform .15s;}
+.maint-card:active{transform:scale(.97);}
+.maint-card .ext-icon-wrap{width:42px;height:42px;border-radius:13px;}
+.maint-card .ext-icon-wrap .material-symbols-rounded{font-size:21px;}
+.maint-card .ext-title{font-size:13px;}
+.maint-card .ext-desc{font-size:10px;}
+.maint-card .ext-action-btn{width:100%;text-align:center;padding:10px;margin-top:2px;}
+
+/* ════════════════════════════════════════
+   DNS PAGE
+════════════════════════════════════════ */
+/* Status card */
+.dns-status-card{
+  border-radius:var(--r);border:1px solid var(--bdr);
+  background:var(--card-grad);padding:18px;margin-bottom:18px;
+  position:relative;overflow:hidden;box-shadow:var(--shadow-card);
+}
+.dns-status-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--ac),transparent);
+  opacity:.4;
+}
+.dns-status-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.dns-status-label{font-family:'Orbitron',monospace;font-size:9px;letter-spacing:3px;color:var(--ac);opacity:.7;}
+.dns-mode-badge{
+  display:flex;align-items:center;gap:5px;
+  padding:3px 10px;border-radius:9999px;
+  font-size:10px;font-weight:600;
+  border:1px solid;
+}
+.dns-mode-badge.on{color:var(--grn);border-color:rgba(34,197,94,0.35);background:var(--grn-d);}
+.dns-mode-badge.off{color:var(--lo);border-color:var(--bdr);background:transparent;}
+.dns-mode-badge.auto{color:var(--ac);border-color:var(--bdr-h);background:var(--s0);}
+.dns-mode-dot{width:5px;height:5px;border-radius:50%;background:currentColor;}
+
+.dns-active-name{font-family:'Orbitron',monospace;font-size:18px;font-weight:900;color:var(--hi);margin-bottom:2px;}
+.dns-active-host{font-size:11px;color:var(--lo);word-break:break-all;}
+.dns-active-desc{font-size:10px;color:var(--ac);margin-top:6px;opacity:.8;}
+
+/* Quick actions */
+.dns-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;}
+.dns-action-btn{
+  display:flex;align-items:center;justify-content:center;gap:7px;
+  padding:12px 10px;border-radius:var(--r-sm);border:1px solid var(--bdr);
+  background:var(--card-grad);cursor:pointer;
+  font-size:12px;font-weight:600;color:var(--hi);
+  transition:background .2s,border-color .2s,transform .1s;
+  -webkit-tap-highlight-color:transparent;box-shadow:var(--shadow-card);
+}
+.dns-action-btn:active{transform:scale(.96);}
+.dns-action-btn.red{border-color:rgba(239,68,68,.3);color:var(--red);}
+.dns-action-btn.red:active{background:var(--red-d);}
+.dns-action-btn .ba-icon{font-size:18px;}
+
+/* DNS list */
+.dns-list{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;}
+.dns-item{
+  display:flex;flex-direction:column;align-items:flex-start;gap:8px;
+  padding:13px 12px;border-radius:var(--r-sm);
+  border:1px solid var(--bdr);background:var(--card-grad);
+  cursor:pointer;transition:border-color .2s,background .2s,transform .1s;
+  -webkit-tap-highlight-color:transparent;position:relative;overflow:hidden;box-shadow:var(--shadow-card);min-height:108px;
+}
+.dns-item:active{transform:scale(.97);}
+.dns-item.selected{border-color:var(--ac);background:rgba(168,85,247,0.10);}
+.dns-item.selected::before{
+  content:'';position:absolute;left:0;top:0;right:0;height:3px;
+  background:var(--ac);box-shadow:0 0 8px var(--ac);border-radius:3px 3px 0 0;
+}
+.dns-item-top{display:flex;align-items:center;justify-content:space-between;width:100%;}
+.dns-item-logo{
+  width:34px;height:34px;border-radius:10px;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;border:1px solid rgba(255,255,255,0.08);
+  font-weight:700;font-family:'Orbitron',monospace;font-size:11px;
+  box-shadow:inset 0 1px 1px rgba(255,255,255,0.08);
+}
+.dns-item-info{flex:1;min-width:0;}
+.dns-item-name{font-size:12.5px;font-weight:600;color:var(--hi);margin-bottom:2px;}
+.dns-item-host{font-size:9px;color:var(--lo);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%;}
+.dns-item-tag{
+  font-size:8px;padding:2px 7px;border-radius:9999px;
+  border:1px solid;letter-spacing:.5px;white-space:nowrap;align-self:flex-start;
+}
+.tag-speed{color:#f59e0b;border-color:rgba(245,158,11,.3);background:rgba(245,158,11,.08);}
+.tag-privacy{color:var(--ac3);border-color:var(--bdr);background:var(--s0);}
+.tag-noads{color:var(--grn);border-color:rgba(34,197,94,.3);background:var(--grn-d);}
+.tag-family{color:#c084fc;border-color:rgba(192,132,252,.3);background:rgba(192,132,252,.08);}
+.tag-secure{color:var(--ac);border-color:var(--bdr-h);background:var(--s0);}
+
+.dns-item-check{
+  width:18px;height:18px;border-radius:50%;
+  border:2px solid var(--bdr);flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  transition:border-color .2s,background .2s;
+}
+.dns-item.selected .dns-item-check{
+  border-color:var(--ac);background:var(--ac);
+  box-shadow:0 0 8px var(--glow);
+}
+.dns-item-check::after{
+  content:'';width:6px;height:6px;border-radius:50%;
+  background:#fff;opacity:0;transition:opacity .2s;
+}
+.dns-item.selected .dns-item-check::after{opacity:1;}
+
+/* Apply button */
+.dns-apply-btn{
+  width:100%;padding:15px;border-radius:var(--r-sm);
+  background:linear-gradient(135deg,var(--ac2),var(--ac) 55%,var(--pu));
+  border:none;color:#fff;font-family:'Orbitron',monospace;
+  font-size:13px;font-weight:700;letter-spacing:2px;
+  cursor:pointer;box-shadow:0 4px 22px -2px var(--glow);
+  transition:opacity .2s,transform .1s;margin-top:4px;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+}
+.dns-apply-btn:active{transform:scale(.97);}
+.dns-apply-btn:disabled{opacity:.4;pointer-events:none;}
+.dns-apply-btn .btn-icon{font-size:18px;}
+
+/* Toast */
+#toast{
+  position:fixed;top:calc(14px + var(--inset-top));left:50%;
+  transform:translateX(-50%) translateY(-130%) scale(.96);
+  display:flex;align-items:center;gap:11px;
+  background:linear-gradient(135deg,rgba(14,26,48,.97),rgba(20,12,40,.97));border:1px solid var(--bdr-h);
+  border-radius:var(--r-sm);padding:12px 18px;font-size:12px;max-width:88vw;
+  color:var(--hi);z-index:300;
+  opacity:0;transition:opacity .3s var(--ease),transform .35s var(--ease);pointer-events:none;
+  backdrop-filter:blur(16px);box-shadow:0 10px 30px -8px rgba(0,0,0,.65),0 0 0 1px rgba(255,255,255,0.02) inset;
+}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0) scale(1);}
+#toast .toast-icon{font-size:22px;flex-shrink:0;color:var(--ac);text-shadow:0 0 10px var(--glow);}
+#toast.success .toast-icon{color:var(--grn);text-shadow:0 0 10px var(--grn-d);}
+#toast.error .toast-icon{color:var(--red);text-shadow:0 0 10px var(--red-d);}
+#toast.warn .toast-icon{color:#f59e0b;text-shadow:0 0 10px rgba(245,158,11,.3);}
+#toast.success{border-color:rgba(34,229,143,0.35);}
+#toast.error{border-color:rgba(255,84,112,0.35);}
+#toast .toast-body{display:flex;flex-direction:column;gap:2px;min-width:0;}
+#toast .toast-title{font-family:'Orbitron',monospace;font-size:11px;font-weight:700;letter-spacing:1.5px;color:var(--hi);}
+#toast .toast-msg{font-size:11px;color:var(--lo);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+@keyframes pulseGlow{0%,100%{box-shadow:0 0 6px currentColor;}50%{box-shadow:0 0 16px currentColor;}}
+
+.material-symbols-rounded{
+  font-family:'Material Symbols Rounded'!important;
+  font-weight:normal;font-style:normal;line-height:1;
+  letter-spacing:normal;text-transform:none;display:inline-block;
+  white-space:nowrap;direction:ltr;-webkit-font-smoothing:antialiased;
+  font-feature-settings:'liga';
+}
+
+.touch-card{padding-top:4px}
+.touch-slider{width:100%;margin:10px 0;accent-color:#a855f7;}
+.touch-labels{display:flex;justify-content:space-between;font-size:9px;color:var(--lo);font-family:'Orbitron',monospace;}
+
+</style>
+</head>
+<body>
+<div class="status-scrim"></div>
+<canvas id="bgCanvas"></canvas>
+
+<div id="licenseGate">
+  <div class="lic-icon"><span class="material-symbols-rounded">vpn_key</span></div>
+  <div class="lic-title">LICENSE REQUIRED</div>
+  <div class="lic-sub">Masukkan License Key untuk mengaktifkan Zigora-Secure. Dapatkan key di website resmi @Xyroo.</div>
+  <input type="text" id="licInput" class="lic-input" placeholder="ZGR-XXXX-XXXX-X" maxlength="15" autocomplete="off" autocapitalize="characters">
+  <button class="lic-btn" onclick="activateLicense()">
+    <span class="material-symbols-rounded" style="vertical-align:-5px;font-size:18px;margin-right:6px;">lock_open</span>ACTIVATE
+  </button>
+  <div class="lic-err" id="licErr"></div>
+  <a class="lic-link" href="https://license-key.auzia475.workers.dev/" target="_blank">Dapatkan License Key →</a>
+</div>
+
+<div id="splash">
+  <video id="splashVideo" autoplay muted loop playsinline onerror="this.style.display='none'">
+    <source src="intro.mp4" type="video/mp4">
+  </video>
+  <div class="splash-ov"></div>
+  <div class="splash-content">
+    <div class="sp-ring"></div>
+    <div class="sp-name">ZIGORA-SECURE</div>
+    <div class="sp-sub">LOADING SYSTEM</div>
+    <div class="sp-bar"><div class="sp-fill" id="spFill"></div></div>
+  </div>
+</div>
+
+<div id="toast">
+  <span class="toast-icon material-symbols-rounded" id="toastIcon">check_circle</span>
+  <div class="toast-body">
+    <div class="toast-title" id="toastTitle">Done</div>
+    <div class="toast-msg" id="toastMsg"></div>
+  </div>
+</div>
+
+<div id="wrap">
+
+  <header class="hdr">
+    <div class="hdr-left">
+      <div class="hdr-icon">
+        <span class="material-symbols-rounded" style="color:#fff;font-size:18px;">security</span>
+      </div>
+      <div>
+        <div class="hdr-title">ZIGORA-SECURE</div>
+        <div class="hdr-sub">by @Xyroo · Stable</div>
+      </div>
+    </div>
+    <div class="hdr-right">
+      <div class="pill">
+        <span class="dot" id="sDot"></span>
+        <span id="sLbl">Active</span>
+      </div>
+      <span class="vtag">v1.0.0</span>
+    </div>
+  </header>
+
+  <div class="pages">
+
+    <div class="page active" id="page-dashboard">
+      <div class="hero">
+        <img src="banner.jpg" class="hero-img" onerror="this.style.display='none'">
+        <div class="hero-ov"></div>
+        <div class="hero-top">
+          <div class="hero-badge">ZIGORA-SECURE</div>
+          <div class="hero-sub">@Xyroo · Six Eyes</div>
+        </div>
+        <div class="hero-mode" id="heroMode">
+          <span class="material-symbols-rounded mode-icon" id="modeIcon">bolt</span>
+          <span class="mode-txt" id="modeLbl">IDLE MODE</span>
+          <span class="mode-r" id="tierBadge">—</span>
+        </div>
+      </div>
+
+      <div class="sec-hdr">
+        <span class="sec-lbl"><span class="material-symbols-rounded" style="font-size:11px;vertical-align:-2px;margin-right:3px;">memory</span>PROCESSOR</span>
+        <span class="sec-val" id="gPct">—%</span>
+      </div>
+      <div class="cpu-card">
+        <div class="cpu-top">
+          <div>
+            <div class="cpu-freq" id="avgFreq">—<span>MHz</span></div>
+            <div class="cpu-meta" id="freqRange">— MHz – — GHz</div>
+          </div>
+          <div class="cpu-pct-big" id="pctBig">—%</div>
+        </div>
+        <canvas id="cpuCvs"></canvas>
+        <div class="divider"></div>
+        <div class="core-list" id="coreList"></div>
+      </div>
+
+      <div class="sec-hdr"><span class="sec-lbl"><span class="material-symbols-rounded" style="font-size:11px;vertical-align:-2px;margin-right:3px;">monitoring</span>SYSTEM</span></div>
+      <div class="sys-grid">
+        <div class="tile">
+          <div class="tile-icon"><span class="material-symbols-rounded">memory</span></div>
+          <div class="tile-val" id="tRam">—</div>
+          <div class="tile-key">RAM USED</div>
+          <div class="tile-bar"><div class="tile-fill" id="bRam"></div></div>
+        </div>
+        <div class="tile">
+          <div class="tile-icon"><span class="material-symbols-rounded">swap_horiz</span></div>
+          <div class="tile-val" id="tSwap">—</div>
+          <div class="tile-key">SWAP</div>
+          <div class="tile-bar"><div class="tile-fill" id="bSwap"></div></div>
+        </div>
+        <div class="tile">
+          <div class="tile-icon"><span class="material-symbols-rounded">thermostat</span></div>
+          <div class="tile-val" id="tTemp">—</div>
+          <div class="tile-key">TEMP</div>
+          <div class="tile-bar"><div class="tile-fill tile-fill-w" id="bTemp"></div></div>
+        </div>
+        <div class="tile">
+          <div class="tile-icon"><span class="material-symbols-rounded">battery_charging_full</span></div>
+          <div class="tile-val" id="tBat">—</div>
+          <div class="tile-key">BATTERY</div>
+          <div class="tile-bar"><div class="tile-fill tile-fill-g" id="bBat"></div></div>
+        </div>
+        <div class="tile">
+          <div class="tile-icon"><span class="material-symbols-rounded">storage</span></div>
+          <div class="tile-val" id="tStore">—</div>
+          <div class="tile-key">STORAGE</div>
+          <div class="tile-bar"><div class="tile-fill" id="bStore"></div></div>
+        </div>
+        <div class="tile">
+          <div class="tile-icon"><span class="material-symbols-rounded">timer</span></div>
+          <div class="tile-val" id="tUp">—</div>
+          <div class="tile-key">UPTIME</div>
+        </div>
+      </div>
+
+      <div class="sec-hdr"><span class="sec-lbl"><span class="material-symbols-rounded" style="font-size:11px;vertical-align:-2px;margin-right:3px;">smartphone</span>DEVICE</span></div>
+      <div class="spec-grid">
+        <div class="spec-chip wide">
+          <div class="sc-top"><span class="material-symbols-rounded">devices</span><span class="sc-k">MODEL</span></div>
+          <div class="sc-v" id="iModel">—</div>
+        </div>
+        <div class="spec-chip">
+          <div class="sc-top"><span class="material-symbols-rounded">developer_board</span><span class="sc-k">CHIPSET</span></div>
+          <div class="sc-v" id="iChip">—</div>
+        </div>
+        <div class="spec-chip">
+          <div class="sc-top"><span class="material-symbols-rounded">memory</span><span class="sc-k">RAM</span></div>
+          <div class="sc-v" id="iRam">—</div>
+        </div>
+        <div class="spec-chip">
+          <div class="sc-top"><span class="material-symbols-rounded">terminal</span><span class="sc-k">KERNEL</span></div>
+          <div class="sc-v mono" id="iKernel">—</div>
+        </div>
+        <div class="spec-chip">
+          <div class="sc-top"><span class="material-symbols-rounded">android</span><span class="sc-k">ANDROID / SDK</span></div>
+          <div class="sc-v"><span id="iAndroid">—</span> <span class="mono" id="iSdk" style="color:var(--lo);">—</span></div>
+        </div>
+      </div>
+
+      <div class="sec-hdr"><span class="sec-lbl"><span class="material-symbols-rounded" style="font-size:11px;vertical-align:-2px;margin-right:3px;">security</span>ENGINE</span></div>
+      <div class="spec-grid">
+        <div class="spec-chip">
+          <div class="sc-top"><span class="material-symbols-rounded">extension</span><span class="sc-k">MODULE</span></div>
+          <div class="sc-v ac">Zigora-Secure</div>
+        </div>
+        <div class="spec-chip">
+          <div class="sc-top"><span class="material-symbols-rounded">person</span><span class="sc-k">AUTHOR</span></div>
+          <div class="sc-v ac">@Xyroo</div>
+        </div>
+        <div class="spec-chip">
+          <div class="sc-top"><span class="material-symbols-rounded">tune</span><span class="sc-k">PROFILE</span></div>
+          <div class="sc-v" id="iTier">—</div>
+        </div>
+        <div class="spec-chip">
+          <div class="sc-top"><span class="material-symbols-rounded">speed</span><span class="sc-k">SCORE</span></div>
+          <div class="sc-v mono" id="iScore">—</div>
+        </div>
+        <div class="spec-chip wide">
+          <div class="sc-top"><span class="material-symbols-rounded">memory_alt</span><span class="sc-k">HARDWARE ID</span></div>
+          <div class="sc-v mono" id="iHw">—</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="page" id="page-dns">
+      <div class="page-hero">
+        <div class="page-hero-icon"><span class="material-symbols-rounded">dns</span></div>
+        <div>
+          <div class="page-hero-title">PRIVATE DNS</div>
+          <div class="page-hero-sub">Secure & filter your network traffic</div>
+        </div>
+      </div>
+
+      <div class="dns-status-card">
+        <div class="dns-status-top">
+          <span class="dns-status-label">PRIVATE DNS STATUS</span>
+          <div class="dns-mode-badge off" id="dnsBadge">
+            <span class="dns-mode-dot"></span>
+            <span id="dnsBadgeTxt">Loading...</span>
+          </div>
+        </div>
+        <div class="dns-active-name" id="dnsActiveName">—</div>
+        <div class="dns-active-host" id="dnsActiveHost">checking...</div>
+        <div class="dns-active-desc" id="dnsActiveDesc"></div>
+      </div>
+
+      <div class="dns-actions">
+        <button class="dns-action-btn" onclick="dnsAuto()">
+          <span class="material-symbols-rounded ba-icon">autorenew</span>
+          <span>Auto Mode</span>
+        </button>
+        <button class="dns-action-btn red" onclick="dnsOff()">
+          <span class="material-symbols-rounded ba-icon">block</span>
+          <span>Turn Off</span>
+        </button>
+      </div>
+
+      <div class="sec-hdr">
+        <span class="sec-lbl">SELECT DNS SERVER</span>
+      </div>
+      <div class="dns-list" id="dnsList"></div>
+
+      <button class="dns-apply-btn" id="dnsApplyBtn" onclick="dnsApply()" disabled>
+        <span class="material-symbols-rounded btn-icon">rocket_launch</span>
+        APPLY DNS
+      </button>
+      <div style="height:8px"></div>
+    </div>
+
+    <div class="page" id="page-extras">
+      <div class="page-hero">
+        <div class="page-hero-icon"><span class="material-symbols-rounded">build</span></div>
+        <div>
+          <div class="page-hero-title">EXTRAS</div>
+          <div class="page-hero-sub">Tuning & maintenance tools</div>
+        </div>
+      </div>
+
+      <div class="sec-hdr">
+        <span class="sec-lbl"><span class="material-symbols-rounded" style="font-size:11px;vertical-align:-2px;margin-right:3px;">cleaning_services</span>MAINTENANCE</span>
+        <span class="sec-val" id="perfUtilStatus">STABLE</span>
+      </div>
+      <div class="maint-grid">
+        <div class="maint-card">
+          <div class="ext-icon-wrap"><span class="material-symbols-rounded">cleaning_services</span></div>
+          <div>
+            <div class="ext-title">Drop Caches</div>
+            <div class="ext-desc">Bersihkan cache kernel, ANR & Dropbox log.</div>
+          </div>
+          <button class="ext-action-btn" id="btnClearCache" onclick="runExtraAction('clear_cache')">PURGE</button>
+        </div>
+        <div class="maint-card">
+          <div class="ext-icon-wrap"><span class="material-symbols-rounded">storage</span></div>
+          <div>
+            <div class="ext-title">FSTRIM Storage</div>
+            <div class="ext-desc">Optimasi blok kosong /data & /system.</div>
+          </div>
+          <button class="ext-action-btn" id="btnFstrim" onclick="runExtraAction('fstrim')">TRIM</button>
+        </div>
+      </div>
+
+      <div class="sec-hdr">
+        <span class="sec-lbl"><span class="material-symbols-rounded" style="font-size:11px;vertical-align:-2px;margin-right:3px;">touch_app</span>TOUCH RESPONSE</span>
+      </div>
+      <div class="ext-card">
+        <div class="ext-row slider-card" style="flex-direction:column;align-items:stretch;">
+          <div class="ext-info">
+            <div class="ext-icon-wrap"><span class="material-symbols-rounded">bolt</span></div>
+            <div>
+              <div class="ext-title">Touch Accelerator</div>
+              <div class="ext-desc">Adjust touch response profile.</div>
+            </div>
+          </div>
+          <input type="range" min="0" max="4" value="0" id="touchAccelSlider" onchange="setTouchAccel(this.value)" class="slider-track">
+          <div class="slider-labels">
+            <span>DEFAULT</span><span>FAST</span><span>FASTER</span><span>FASTEST</span><span>BOOSTER</span>
+          </div>
+        </div>
+        <div class="ext-row slider-card" style="flex-direction:column;align-items:stretch;">
+          <div class="ext-info">
+            <div class="ext-icon-wrap"><span class="material-symbols-rounded">waves</span></div>
+            <div>
+              <div class="ext-title">Touch Smoothness</div>
+              <div class="ext-desc">Improve screen responsiveness and scrolling smoothness.</div>
+            </div>
+          </div>
+          <input type="range" min="0" max="4" value="0" id="touchSmoothnessSlider" onchange="setTouchSmoothness(this.value)" class="slider-track">
+          <div class="slider-labels">
+            <span>DEFAULT</span><span>SMOOTH</span><span>FASTER</span><span>ULTRA</span><span>EXTREME</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+    <!-- ══════════ PAGE: DISPLAY ══════════ -->
+    <div class="page" id="page-display">
+      <div class="page-hero">
+        <div class="page-hero-icon"><span class="material-symbols-rounded">display_settings</span></div>
+        <div>
+          <div class="page-hero-title">DISPLAY</div>
+          <div class="page-hero-sub">Resolution & DPI · Preview 10s · Auto revert</div>
+        </div>
+      </div>
+
+      <!-- LIVE PREVIEW CARD -->
+      <div class="disp-preview">
+        <div class="disp-preview-screen">
+          <!-- animated rings -->
+          <div class="disp-rings">
+            <div class="disp-ring r1"></div>
+            <div class="disp-ring r2"></div>
+          </div>
+          <div class="disp-mock" id="dispMock">
+            <div class="disp-mock-dot" id="mockDot"></div>
+            <div class="disp-mock-res" id="mockRes">— × —</div>
+            <div class="disp-mock-dpi" id="mockDpi">— dpi</div>
+          </div>
+          <div class="disp-badge default" id="dispBadge">DEFAULT</div>
+          <!-- countdown overlay (hidden by default) -->
+          <div class="disp-countdown" id="dispCountdown">
+            <svg viewBox="0 0 44 44" class="cd-svg">
+              <circle cx="22" cy="22" r="18" class="cd-track"/>
+              <circle cx="22" cy="22" r="18" class="cd-prog" id="cdProg"/>
+            </svg>
+            <span class="cd-num" id="cdNum">10</span>
+          </div>
+        </div>
+        <div class="disp-preview-bar">
+          <div>
+            <div class="disp-preview-lbl">RESOLUTION</div>
+            <div class="disp-preview-val" id="prevRes">—</div>
+          </div>
+          <div style="text-align:center">
+            <div class="disp-preview-lbl">STATUS</div>
+            <div class="disp-preview-val" id="prevStatus">IDLE</div>
+          </div>
+          <div style="text-align:right">
+            <div class="disp-preview-lbl">DENSITY</div>
+            <div class="disp-preview-val" id="prevDpi">—</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- QUICK PRESETS -->
+      <div class="sec-hdr">
+        <span class="sec-lbl"><span class="material-symbols-rounded" style="font-size:11px;vertical-align:-2px;margin-right:3px;">grid_view</span>QUICK PRESETS</span>
+      </div>
+      <div class="preset-grid" id="presetGrid">
+        <div class="preset-chip" data-w="1080" data-h="2400" data-dpi="420" onclick="selectPreset(this)">
+          <div class="pc-name">FHD+</div><div class="pc-res">1080×2400</div><div class="pc-dpi">420 dpi</div>
+        </div>
+        <div class="preset-chip" data-w="720" data-h="1600" data-dpi="300" onclick="selectPreset(this)">
+          <div class="pc-name">HD+</div><div class="pc-res">720×1600</div><div class="pc-dpi">300 dpi</div>
+        </div>
+        <div class="preset-chip" data-w="1440" data-h="3200" data-dpi="560" onclick="selectPreset(this)">
+          <div class="pc-name">QHD+</div><div class="pc-res">1440×3200</div><div class="pc-dpi">560 dpi</div>
+        </div>
+        <div class="preset-chip" data-w="1080" data-h="1920" data-dpi="480" onclick="selectPreset(this)">
+          <div class="pc-name">FHD</div><div class="pc-res">1080×1920</div><div class="pc-dpi">480 dpi</div>
+        </div>
+        <div class="preset-chip" data-w="540" data-h="1170" data-dpi="240" onclick="selectPreset(this)">
+          <div class="pc-name">LOW</div><div class="pc-res">540×1170</div><div class="pc-dpi">240 dpi</div>
+        </div>
+        <div class="preset-chip" data-w="800" data-h="1280" data-dpi="320" onclick="selectPreset(this)">
+          <div class="pc-name">GAME</div><div class="pc-res">800×1280</div><div class="pc-dpi">320 dpi</div>
+        </div>
+      </div>
+
+      <!-- INPUT RESOLUTION -->
+      <div class="sec-hdr">
+        <span class="sec-lbl"><span class="material-symbols-rounded" style="font-size:11px;vertical-align:-2px;margin-right:3px;">aspect_ratio</span>RESOLUTION</span>
+      </div>
+      <div class="disp-input-card">
+        <div class="disp-input-row">
+          <div class="disp-input-wrap">
+            <label class="disp-input-lbl">WIDTH</label>
+            <div class="disp-input-inner">
+              <span class="material-symbols-rounded disp-input-icon">width</span>
+              <input type="number" id="inW" class="disp-num-input" placeholder="1080" min="480" max="1440" oninput="syncInputs()">
+              <span class="disp-input-unit">px</span>
+            </div>
+          </div>
+          <div class="disp-x">×</div>
+          <div class="disp-input-wrap">
+            <label class="disp-input-lbl">HEIGHT</label>
+            <div class="disp-input-inner">
+              <span class="material-symbols-rounded disp-input-icon">height</span>
+              <input type="number" id="inH" class="disp-num-input" placeholder="2400" min="800" max="3200" oninput="syncInputs()">
+              <span class="disp-input-unit">px</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- INPUT DPI -->
+      <div class="sec-hdr">
+        <span class="sec-lbl"><span class="material-symbols-rounded" style="font-size:11px;vertical-align:-2px;margin-right:3px;">density_medium</span>DENSITY / DPI</span>
+      </div>
+      <div class="disp-input-card">
+        <div class="disp-dpi-row">
+          <div class="disp-input-inner" style="flex:1">
+            <span class="material-symbols-rounded disp-input-icon">density_medium</span>
+            <input type="number" id="inDpi" class="disp-num-input" placeholder="420" min="120" max="720" oninput="syncInputs()">
+            <span class="disp-input-unit">dpi</span>
+          </div>
+          <div class="disp-dpi-hints">
+            <button class="disp-dpi-tag" onclick="setDpiQuick(240)">240</button>
+            <button class="disp-dpi-tag" onclick="setDpiQuick(320)">320</button>
+            <button class="disp-dpi-tag" onclick="setDpiQuick(420)">420</button>
+            <button class="disp-dpi-tag" onclick="setDpiQuick(480)">480</button>
+            <button class="disp-dpi-tag" onclick="setDpiQuick(560)">560</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- DEVICE CURRENT -->
+      <div class="sec-hdr"><span class="sec-lbl"><span class="material-symbols-rounded" style="font-size:11px;vertical-align:-2px;margin-right:3px;">info</span>DEVICE CURRENT</span></div>
+      <div class="spec-grid" style="margin-bottom:14px;">
+        <div class="spec-chip">
+          <div class="sc-top"><span class="material-symbols-rounded">monitor</span><span class="sc-k">RESOLUTION</span></div>
+          <div class="sc-v mono" id="curRes">—</div>
+        </div>
+        <div class="spec-chip">
+          <div class="sc-top"><span class="material-symbols-rounded">density_medium</span><span class="sc-k">DENSITY</span></div>
+          <div class="sc-v mono" id="curDpi">—</div>
+        </div>
+      </div>
+
+      <!-- ACTIONS -->
+      <div class="disp-actions">
+        <button class="disp-btn apply" id="btnDispPreview" onclick="dispPreview()">
+          <span class="material-symbols-rounded">visibility</span>PREVIEW 10s
+        </button>
+        <button class="disp-btn apply" id="btnDispApply" onclick="dispApply()" style="background:linear-gradient(135deg,#16a34a,#22c55e);">
+          <span class="material-symbols-rounded">check_circle</span>APPLY
+        </button>
+      </div>
+      <div style="margin-top:10px">
+        <button class="disp-btn reset" style="width:100%" onclick="dispReset()">
+          <span class="material-symbols-rounded">restart_alt</span>RESET DEFAULT
+        </button>
+      </div>
+      <div style="height:14px"></div>
+    </div>
+
+<nav class="nav">
+  <div class="nav-indicator" id="navInd"></div>
+
+  <button class="nav-btn active" id="nb-dashboard" onclick="goPage('dashboard')">
+    <span class="material-symbols-rounded ni">dashboard</span>
+    <span class="nl">MONITOR</span>
+  </button>
+
+  <button class="nav-btn" id="nb-dns" onclick="goPage('dns')">
+    <span class="material-symbols-rounded ni">dns</span>
+    <span class="nl">DNS</span>
+  </button>
+
+  <button class="nav-btn" id="nb-display" onclick="goPage('display')">
+    <span class="material-symbols-rounded ni">display_settings</span>
+    <span class="nl">DISPLAY</span>
+  </button>
+
+  <button class="nav-btn" id="nb-extras" onclick="goPage('extras')">
+    <span class="material-symbols-rounded ni">build</span>
+    <span class="nl">EXTRAS</span>
+  </button>
+</nav>
+
+</div>
+<script>
+// ════════════════════════════════════════════════════════════
+//  PARTICLE BG
+// ════════════════════════════════════════════════════════════
+(function(){
+  const cv=document.getElementById('bgCanvas'),ctx=cv.getContext('2d');
+  let W,H,pts=[];
+  function resize(){W=cv.width=window.innerWidth;H=cv.height=window.innerHeight;init();}
+  function init(){pts=[];for(let i=0;i<40;i++)pts.push({x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-.5)*.3,vy:(Math.random()-.5)*.3,r:Math.random()*1.2+.3,a:Math.random()});}
+  function frame(){
+    ctx.clearRect(0,0,W,H);
+    pts.forEach(p=>{
+      p.x+=p.vx;p.y+=p.vy;
+      if(p.x<0)p.x=W;if(p.x>W)p.x=0;if(p.y<0)p.y=H;if(p.y>H)p.y=0;
+      ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+      ctx.fillStyle=`rgba(168,85,247,${p.a*.40})`;ctx.fill();
+    });
+    for(let i=0;i<pts.length;i++)for(let j=i+1;j<pts.length;j++){
+      const dx=pts[i].x-pts[j].x,dy=pts[i].y-pts[j].y,d=Math.sqrt(dx*dx+dy*dy);
+      if(d<80){ctx.beginPath();ctx.moveTo(pts[i].x,pts[i].y);ctx.lineTo(pts[j].x,pts[j].y);
+        ctx.strokeStyle=`rgba(168,85,247,${(1-d/80)*.10})`;ctx.lineWidth=.5;ctx.stroke();}
+    }
+    requestAnimationFrame(frame);
+  }
+  window.addEventListener('resize',resize);resize();frame();
+})();
+
+// ════════════════════════════════════════════════════════════
+//  SHELL BRIDGE
+// ════════════════════════════════════════════════════════════
+async function sh(cmd){
+  // Prioritas 1: APK native via Shizuku (AndroidShell JS interface)
+  if(window.AndroidShell?.exec){
+    try{
+      const r=window.AndroidShell.exec(cmd);
+      if(r!=null) return r;
+    }catch(_){}
+  }
+  const fns=[
+    ()=>window.ksu?.exec(cmd),()=>window.axeron?.exec(cmd),
+    ()=>(typeof ksu!=='undefined'&&ksu?.exec(cmd)),
+    ()=>(typeof axeron!=='undefined'&&axeron?.exec(cmd)),
+    ()=>window.exec?.(cmd),
+  ];
+  for(const f of fns){try{const r=await f();if(r==null)continue;return r?.stdout??(typeof r==='string'?r:'');}catch(_){}}
+  return '';
+}
+
+function $s(id,v){const e=document.getElementById(id);if(e)e.textContent=v;}
+function $h(id,v){const e=document.getElementById(id);if(e)e.innerHTML=v;}
+function $b(id,v,mx){const e=document.getElementById(id);if(!e||v==null||!mx)return;e.style.width=Math.min(100,Math.max(0,v/mx*100)).toFixed(1)+'%';}
+function clip(t,n=20){if(!t)return'—';t=t.trim();return t.length>n?t.slice(0,n)+'…':t;}
+
+// ════════════════════════════════════════════════════════════
+//  NAV
+// ════════════════════════════════════════════════════════════
+let curPage='dashboard';
+function goPage(id){
+  if(id===curPage)return;
+  hapticTap();
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active','slide-in'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  const pg=document.getElementById('page-'+id);
+  pg?.classList.add('active','slide-in');
+  document.getElementById('nb-'+id)?.classList.add('active');
+  curPage=id;
+  navPushState(id);
+  updateNavIndicator();
+  if(id==='dns')refreshDnsStatus();
+  if(id==='display')readDeviceDisplay();
+}
+function updateNavIndicator(){
+  const active=document.querySelector('.nav-btn.active');
+  const ind=document.getElementById('navInd');
+  if(!active||!ind)return;
+  const nr=active.getBoundingClientRect();
+  const navr=document.querySelector('.nav').getBoundingClientRect();
+  ind.style.left=(nr.left-navr.left)+'px';
+  ind.style.width=nr.width+'px';
+}
+window.addEventListener('resize',updateNavIndicator);
+setTimeout(updateNavIndicator,100);
+
+// ══ APP-LIKE: Haptic feedback ══
+function hapticTap(){
+  try{
+    if(window.navigator?.vibrate) window.navigator.vibrate(8);
+  }catch(_){}
+}
+
+// ══ APP-LIKE: Global ripple effect on tap ══
+document.addEventListener('pointerdown',function(e){
+  const target=e.target.closest('button,.nav-btn,.dns-item,.preset-chip,.tile,.disp-dpi-tag,a.mod-action,a.link-btn,.guide-head');
+  if(!target)return;
+  if(!target.classList.contains('ripple-wrap'))target.classList.add('ripple-wrap');
+  const rect=target.getBoundingClientRect();
+  const size=Math.max(rect.width,rect.height);
+  const r=document.createElement('span');
+  r.className='ripple';
+  r.style.width=r.style.height=size+'px';
+  r.style.left=(e.clientX-rect.left-size/2)+'px';
+  r.style.top=(e.clientY-rect.top-size/2)+'px';
+  target.appendChild(r);
+  setTimeout(()=>r.remove(),560);
+},{passive:true});
+
+// ════════════════════════════════════════════════════════════
+//  CPU GRAPH
+// ════════════════════════════════════════════════════════════
+const N=36;let hist=Array(N).fill(0),cMax=[],coresDone=false,maxF=0,minF=0;
+
+function drawGraph(cv,data,maxV){
+  const dpr=window.devicePixelRatio||1;
+  const W=cv.clientWidth||1,H=cv.clientHeight||1;
+  const pw=Math.round(W*dpr),ph=Math.round(H*dpr);
+  if(cv.width!==pw||cv.height!==ph){cv.width=pw;cv.height=ph;}
+  const ctx=cv.getContext('2d');
+  ctx.save();ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='rgba(168,85,247,0.14)';
+  for(let gx=8;gx<W;gx+=9)for(let gy=8;gy<H;gy+=9){ctx.beginPath();ctx.arc(gx,gy,.8,0,Math.PI*2);ctx.fill();}
+  if(!maxV||data.every(v=>v===0)){ctx.restore();return;}
+  const pL=2,pR=2,pT=4,pB=4,iW=W-pL-pR,iH=H-pT-pB,step=iW/(data.length-1);
+  const pts=data.map((v,i)=>({x:pL+i*step,y:pT+(1-Math.min(v,maxV)/maxV)*iH}));
+  const g=ctx.createLinearGradient(0,pT,0,pT+iH);
+  g.addColorStop(0,'rgba(168,85,247,0.32)');g.addColorStop(.6,'rgba(168,85,247,0.07)');g.addColorStop(1,'rgba(0,180,216,0)');
+  ctx.beginPath();ctx.moveTo(pts[0].x,pT+iH);
+  for(const p of pts)ctx.lineTo(p.x,p.y);
+  ctx.lineTo(pts[pts.length-1].x,pT+iH);ctx.closePath();ctx.fillStyle=g;ctx.fill();
+  ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);
+  for(let i=1;i<pts.length;i++){const mx=(pts[i-1].x+pts[i].x)/2;ctx.quadraticCurveTo(pts[i-1].x,pts[i-1].y,mx,(pts[i-1].y+pts[i].y)/2);}
+  ctx.lineTo(pts[pts.length-1].x,pts[pts.length-1].y);
+  ctx.strokeStyle='#a855f7';ctx.lineWidth=1.8;ctx.lineJoin='round';ctx.stroke();
+  const l=pts[pts.length-1];
+  ctx.beginPath();ctx.arc(l.x,l.y,3,0,Math.PI*2);
+  ctx.fillStyle='#d8b4fe';ctx.shadowColor='#a855f7';ctx.shadowBlur=10;ctx.fill();ctx.shadowBlur=0;
+  ctx.restore();
+}
+
+function initCores(n){
+  $s('freqRange',Math.round(minF/1000)+' MHz – '+(maxF/1000000).toFixed(2)+' GHz');
+  const l=document.getElementById('coreList');l.innerHTML='';
+  for(let i=0;i<n;i++)l.insertAdjacentHTML('beforeend',`
+    <div class="core-row">
+      <span class="core-n">${i+1}</span>
+      <span class="core-mhz" id="cm${i}">—</span>
+      <div class="core-trk"><div class="core-fill" id="cb${i}" style="width:0"></div></div>
+      <span class="core-pct" id="cp${i}">—%</span>
+    </div>`);
+  coresDone=true;
+}
+
+// ════════════════════════════════════════════════════════════
+//  LIVE TICK
+// ════════════════════════════════════════════════════════════
+let busy=false,totMem=0,totSwap=0;
+async function tick(){
+  if(busy)return;busy=true;
+  try{
+    const[cr,mr,nr]=await Promise.all([
+      sh('cat /sys/devices/system/cpu/cpu*/cpufreq/scaling_cur_freq 2>/dev/null'),
+      coresDone?'':sh('cat /sys/devices/system/cpu/cpu*/cpufreq/cpuinfo_max_freq 2>/dev/null'),
+      coresDone?'':sh('cat /sys/devices/system/cpu/cpu*/cpufreq/cpuinfo_min_freq 2>/dev/null'),
+    ]);
+    const cfs=cr.trim()?cr.trim().split('\n').map(Number).filter(v=>v>0):[];
+    if(!coresDone&&cfs.length){
+      cMax=mr.trim()?mr.trim().split('\n').map(Number).filter(v=>v>0):[];
+      const mins=nr.trim()?nr.trim().split('\n').map(Number).filter(v=>v>0):[];
+      maxF=cMax.length?Math.max(...cMax):Math.max(...cfs)*1.1;
+      minF=mins.length?Math.min(...mins):Math.round(maxF*.2);
+      initCores(cfs.length);
+    }
+    const avg=cfs.length?cfs.reduce((a,b)=>a+b,0)/cfs.length:0,avgM=Math.round(avg/1000);
+    hist.push(avgM);if(hist.length>N)hist.shift();
+    $s('avgFreq',avgM>999?(avgM/1000).toFixed(2)+' GHz':avgM+' MHz');
+    let tot=0;
+    cfs.forEach((f,i)=>{
+      const m=cMax[i]||maxF||1,pct=Math.max(0,Math.round(f/m*100)),mhz=Math.round(f/1000);
+      tot+=pct;
+      const me=document.getElementById('cm'+i),be=document.getElementById('cb'+i),pe=document.getElementById('cp'+i);
+      if(me)me.textContent=mhz+' MHz';if(be)be.style.width=pct+'%';if(pe)pe.textContent=pct+'%';
+    });
+    const ap=cfs.length?Math.round(tot/cfs.length):0;
+    $s('gPct',ap+'%');$s('pctBig',ap+'%');
+    drawGraph(document.getElementById('cpuCvs'),hist,Math.round(maxF/1000));
+
+    const mem=await sh("cat /proc/meminfo|grep -E '^(MemTotal|MemAvailable|SwapTotal|SwapFree):'");
+    const mt=mem.match(/MemTotal:\s+(\d+)/),ma=mem.match(/MemAvailable:\s+(\d+)/);
+    const st=mem.match(/SwapTotal:\s+(\d+)/),sf=mem.match(/SwapFree:\s+(\d+)/);
+    if(mt)totMem=parseInt(mt[1])/1024/1024;if(st)totSwap=parseInt(st[1])/1024/1024;
+    const um=mt&&ma?totMem-parseInt(ma[1])/1024/1024:null,us=st&&sf?totSwap-parseInt(sf[1])/1024/1024:null;
+    $s('tRam',um!=null?um.toFixed(1)+' G':'—');$s('tSwap',us!=null?us.toFixed(1)+' G':'—');
+    $b('bRam',um,totMem);$b('bSwap',us,totSwap||1);
+
+    const tr=await sh('cat /sys/class/power_supply/battery/temp 2>/dev/null');
+    if(tr&&!isNaN(parseInt(tr))){let v=parseInt(tr);if(v>10000)v/=1000;else if(v>100)v/=10;$s('tTemp',v.toFixed(1)+'°');$b('bTemp',v,60);}
+
+    const df=await sh('df -k /data|tail -1'),dp=df.trim().split(/\s+/);
+    if(dp.length>=3){const u=parseInt(dp[2])/1024/1024,t=parseInt(dp[1])/1024/1024;$s('tStore',u.toFixed(0)+' G');$b('bStore',u,t);}
+
+    const bat=await sh('dumpsys battery'),bm=bat.match(/level:\s*(\d+)/);
+    if(bm){$s('tBat',bm[1]+'%');$b('bBat',+bm[1],100);}
+
+    const up=await sh("awk '{print int($1)}' /proc/uptime"),s=parseInt(up)||0;
+    $s('tUp',s>=3600?Math.floor(s/3600)+'h '+Math.floor((s%3600)/60)+'m':Math.floor(s/60)+'m');
+
+  }catch(e){console.error(e);}finally{busy=false;}
+}
+
+async function devInfo(){
+  const[model,chip,kern,and,sdk,mem]=await Promise.all([
+    sh('getprop ro.product.model'),sh('getprop ro.board.platform'),
+    sh('uname -r'),sh('getprop ro.build.version.release'),
+    sh('getprop ro.build.version.sdk'),sh('cat /proc/meminfo'),
+  ]);
+  $s('iModel',clip(model,22));$s('iChip',clip(chip,16));
+  $s('iKernel',clip(kern.split('-')[0],18));$s('iAndroid',clip(and,6));$s('iSdk',clip(sdk,4));
+  const m=mem.match(/MemTotal:\s+(\d+)/);$s('iRam',m?(parseInt(m[1])/1024/1024).toFixed(1)+' GB':'—');
+}
+
+let lastPerfState=null;
+async function checkStatus(){
+  const cf=await sh('test -f /data/local/tmp/engine_conflict.flag&&echo 1||echo 0');
+  const dot=document.getElementById('sDot'),lbl=document.getElementById('sLbl');
+  const hero=document.getElementById('heroMode'),mi=document.getElementById('modeIcon');
+  if(cf.trim()==='1'){
+    dot?.classList.add('conflict');dot?.classList.remove('gaming');
+    if(lbl)lbl.textContent='Conflict';$s('modeLbl','CONFLICT');
+    hero?.classList.remove('gaming');return;
+  }
+  dot?.classList.remove('conflict');
+  const ef=await sh('cat /data/local/tmp/engine_exp.conf 2>/dev/null');
+  const ra=ef.match(/render_ahead=(\d+)/),perf=ra&&parseInt(ra[1])>0;
+  if(lbl)lbl.textContent=perf?'Performance':'Active';$s('modeLbl',perf?'PERFORMANCE MODE':'IDLE MODE');
+  if(mi)mi.textContent=perf?'sports_esports':'bolt';
+  hero?.classList.toggle('gaming',!!perf);
+  dot?.classList.toggle('gaming',!!perf);
+  if(lastPerfState!==null&&lastPerfState!==perf){
+    showToast(perf?'🔥 Performance Mode aktif — game terdeteksi':'💤 Idle Mode — kembali normal');
+  }
+  lastPerfState=perf;
+  const ti=await sh('cat /data/local/tmp/engine_tier.txt 2>/dev/null');
+  if(ti.trim()){const p=ti.trim().split('|');if(p[0])$s('iTier',p[0]);if(p[1]){$s('iScore',p[1]+'/6');$s('tierBadge',p[0]||'—');}if(p[2])$s('iHw',p[2]);}
+}
+
+// ════════════════════════════════════════════════════════════
+//  DNS MODULE
+// ════════════════════════════════════════════════════════════
+const DNS_LIST = [
+  { id:'cf',       name:'Cloudflare',   host:'1dot1dot1dot1.cloudflare-dns.com', ip:'1.1.1.1',   color:'#f97316', bg:'rgba(249,115,22,.12)', tag:'speed',   tagTxt:'FASTEST',  icon:'CF', desc:'Fastest public DNS, privacy-first' },
+  { id:'cf2',      name:'Cloudflare',   host:'security.cloudflare-dns.com',      ip:'1.1.1.2',   color:'#fb923c', bg:'rgba(251,146,60,.10)', tag:'noads',   tagTxt:'MALWARE',  icon:'CF', desc:'Cloudflare + malware blocking' },
+  { id:'google',   name:'Google DNS',   host:'dns.google',                       ip:'8.8.8.8',   color:'#4ade80', bg:'rgba(74,222,128,.10)', tag:'speed',   tagTxt:'FAST',     icon:'GG', desc:'Reliable & fast global DNS' },
+  { id:'adguard',  name:'AdGuard DNS',  host:'dns.adguard-dns.com',              ip:'94.140.14.14',color:'#38bdf8',bg:'rgba(56,189,248,.10)',tag:'noads',   tagTxt:'NO ADS',   icon:'AG', desc:'Blocks ads & trackers system-wide' },
+  { id:'nextdns',  name:'NextDNS',      host:'dns.nextdns.io',                   ip:'45.90.28.0', color:'#818cf8', bg:'rgba(129,140,248,.10)',tag:'privacy', tagTxt:'PRIVATE',  icon:'NX', desc:'Customizable privacy DNS' },
+  { id:'quad9',    name:'Quad9',        host:'dns.quad9.net',                    ip:'9.9.9.9',   color:'#a78bfa', bg:'rgba(167,139,250,.10)',tag:'secure',  tagTxt:'SECURE',   icon:'Q9', desc:'Blocks malicious domains' },
+  { id:'opendns',  name:'OpenDNS',      host:'doh.opendns.com',                  ip:'208.67.222.222',color:'#60a5fa',bg:'rgba(96,165,250,.10)',tag:'secure', tagTxt:'TRUSTED',  icon:'OD', desc:'Cisco-backed, anti-phishing' },
+  { id:'cleanbr',  name:'CleanBrowsing',host:'doh.cleanbrowsing.org',            ip:'185.228.168.9',color:'#c084fc',bg:'rgba(192,132,252,.10)',tag:'family', tagTxt:'FAMILY',  icon:'CB', desc:'Safe DNS for families & kids' },
+  { id:'ali',      name:'Alibaba DNS',  host:'dns.alidns.com',                   ip:'223.5.5.5',  color:'#fb923c', bg:'rgba(251,146,60,.10)', tag:'speed',   tagTxt:'ASIA',     icon:'AL', desc:'Low latency for Asia region' },
+  { id:'iij',      name:'IIJ MVNO DNS', host:'public.dns.iij.jp',                ip:'103.2.57.5', color:'#f472b6', bg:'rgba(244,114,182,.10)',tag:'privacy', tagTxt:'JAPAN',    icon:'IJ', desc:'Privacy-respecting DNS from Japan' },
+];
+
+let selectedDns = null;
+
+function buildDnsList(){
+  const el=document.getElementById('dnsList');
+  el.innerHTML='';
+  DNS_LIST.forEach(d=>{
+    const div=document.createElement('div');
+    div.className='dns-item';
+    div.id='dns-item-'+d.id;
+    div.onclick=()=>selectDns(d.id);
+    div.innerHTML=`
+      <div class="dns-item-top">
+        <div class="dns-item-logo" style="background:${d.bg};color:${d.color};border-color:${d.color}22">${d.icon}</div>
+        <div class="dns-item-check" id="dns-check-${d.id}"></div>
+      </div>
+      <div class="dns-item-info">
+        <div class="dns-item-name">${d.name}</div>
+        <div class="dns-item-host">${d.host}</div>
+      </div>
+      <span class="dns-item-tag tag-${d.tag}">${d.tagTxt}</span>`;
+    el.appendChild(div);
+  });
+}
+
+function selectDns(id){
+  document.querySelectorAll('.dns-item').forEach(e=>e.classList.remove('selected'));
+  document.getElementById('dns-item-'+id)?.classList.add('selected');
+  selectedDns=id;
+  const btn=document.getElementById('dnsApplyBtn');
+  if(btn)btn.disabled=false;
+}
+
+async function refreshDnsStatus(){
+  const mode=await sh('settings get global private_dns_mode 2>/dev/null');
+  const host=await sh('settings get global private_dns_specifier 2>/dev/null');
+  const m=mode.trim(), h=host.trim();
+
+  const badge=document.getElementById('dnsBadge');
+  const badgeTxt=document.getElementById('dnsBadgeTxt');
+
+  if(m==='off'||m===''||m==='null'){
+    badge.className='dns-mode-badge off';
+    if(badgeTxt)badgeTxt.textContent='OFF';
+    $s('dnsActiveName','Disabled');
+    $s('dnsActiveHost','Private DNS is turned off');
+    $s('dnsActiveDesc','System is using network-assigned DNS');
+  } else if(m==='opportunistic'){
+    badge.className='dns-mode-badge auto';
+    if(badgeTxt)badgeTxt.textContent='AUTO';
+    $s('dnsActiveName','Auto Mode');
+    $s('dnsActiveHost','Using opportunistic DNS-over-TLS');
+    $s('dnsActiveDesc','System automatically negotiates encryption');
+  } else if(m==='hostname'&&h&&h!=='null'){
+    badge.className='dns-mode-badge on';
+    if(badgeTxt)badgeTxt.textContent='ACTIVE';
+    // match with our list
+    const found=DNS_LIST.find(d=>d.host===h);
+    $s('dnsActiveName',found?found.name:h);
+    $s('dnsActiveHost',h);
+    $s('dnsActiveDesc',found?found.desc:'Custom Private DNS active');
+    // highlight selected in list
+    if(found)selectDns(found.id);
+  } else {
+    badge.className='dns-mode-badge off';
+    if(badgeTxt)badgeTxt.textContent='UNKNOWN';
+    $s('dnsActiveName','Unknown');
+    $s('dnsActiveHost',h||'—');
+    $s('dnsActiveDesc','');
+  }
+}
+
+async function dnsApply(){
+  if(!selectedDns)return;
+  const d=DNS_LIST.find(x=>x.id===selectedDns);
+  if(!d)return;
+  const btn=document.getElementById('dnsApplyBtn');
+  btn.disabled=true;
+  btn.innerHTML='<span class="material-symbols-rounded btn-icon" style="animation:spin 1s linear infinite">autorenew</span> APPLYING...';
+  showToast('⚡ Applying '+d.name+'...');
+
+  await sh(`settings put global private_dns_mode hostname`);
+  await sh(`settings put global private_dns_specifier ${d.host}`);
+  // small delay then refresh
+  await new Promise(r=>setTimeout(r,1200));
+  await refreshDnsStatus();
+  btn.disabled=false;
+  btn.innerHTML='<span class="material-symbols-rounded btn-icon">rocket_launch</span> APPLY DNS';
+  showToast('✅ DNS set to '+d.name);
+}
+
+async function dnsAuto(){
+  showToast('🔄 Switching to Auto mode...');
+  await sh('settings put global private_dns_mode opportunistic');
+  await sh('settings delete global private_dns_specifier');
+  selectedDns=null;
+  document.querySelectorAll('.dns-item').forEach(e=>e.classList.remove('selected'));
+  document.getElementById('dnsApplyBtn').disabled=true;
+  await new Promise(r=>setTimeout(r,800));
+  await refreshDnsStatus();
+  showToast('✅ Auto DNS enabled');
+}
+
+async function dnsOff(){
+  showToast('⛔ Turning off Private DNS...');
+  await sh('settings put global private_dns_mode off');
+  await sh('settings delete global private_dns_specifier');
+  selectedDns=null;
+  document.querySelectorAll('.dns-item').forEach(e=>e.classList.remove('selected'));
+  document.getElementById('dnsApplyBtn').disabled=true;
+  await new Promise(r=>setTimeout(r,800));
+  await refreshDnsStatus();
+  showToast('🔴 Private DNS disabled');
+}
+
+function setTouchAccel(level){
+  runExtraAction('touch_accel', level);
+}
+
+function setTouchSmoothness(level){
+  runExtraAction('touch_smoothness', level);
+}
+
+// Set default slider position saat halaman dibuka
+document.addEventListener('DOMContentLoaded', () => {
+  const ta = document.getElementById('touchAccelSlider');
+  const ts = document.getElementById('touchSmoothnessSlider');
+
+  if (ta) ta.value = 0;
+  if (ts) ts.value = 0;
+});
+
+// ════════════════════════════════════════════════════════════
+//  EXTRAS UTILITIES MODULE (NEW EXECUTOR)
+// ════════════════════════════════════════════════════════════
+async function runExtraAction(actionType, level) {
+  const statusEl = document.getElementById('perfUtilStatus');
+  let targetBtn = null;
+  let originalText = "";
+
+  if (actionType === 'clear_cache') {
+    targetBtn = document.getElementById('btnClearCache');
+    originalText = "PURGE";
+  } else if (actionType === 'fstrim') {
+    targetBtn = document.getElementById('btnFstrim');
+    originalText = "TRIM";
+  }
+
+  if (targetBtn) {
+    targetBtn.disabled = true;
+    targetBtn.textContent = "RUNNING";
+  }
+  statusEl.textContent = "EXECUTING";
+  statusEl.style.color = "var(--ac)";
+
+  try {
+    const levelArg = (level !== undefined && level !== null) ? ' ' + level : '';
+    const command = 'sh /data/adb/modules/zigora_secure/service.sh --extra ' + actionType + levelArg;
+    await sh(command);
+
+    showToast(`Action ${actionType.toUpperCase()} completed successfully!`);
+    statusEl.textContent = "SUCCESS";
+    statusEl.style.color = "#22c55e";
+
+  } catch (error) {
+    console.error("Zigora Extra Exec Error:", error);
+    showToast(`Failed to execute ${actionType}`);
+    statusEl.textContent = "ERROR";
+    statusEl.style.color = "#ef4444";
+  } finally {
+    if (targetBtn) {
+      targetBtn.disabled = false;
+      targetBtn.textContent = originalText;
+    }
+    setTimeout(() => {
+      statusEl.textContent = "STABLE";
+      statusEl.style.color = "var(--hi)";
+    }, 2500);
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+//  TOAST
+// ════════════════════════════════════════════════════════════
+let toastTimer=null;
+function showToast(msg,type,title){
+  const t=document.getElementById('toast');
+  const icon=document.getElementById('toastIcon');
+  const titleEl=document.getElementById('toastTitle');
+  const msgEl=document.getElementById('toastMsg');
+
+  // Auto-detect type & icon from emoji prefix if not specified
+  let clean=msg;
+  if(!type){
+    if(/^✅/.test(msg)){type='success';clean=msg.replace(/^✅\s*/,'');}
+    else if(/^(❌|🔴)/.test(msg)){type='error';clean=msg.replace(/^(❌|🔴)\s*/,'');}
+    else if(/^(⚡|🔥|🔄|⛔|💤|❄️)/u.test(msg)){type='info';clean=msg.replace(/^(⚡|🔥|🔄|⛔|💤|❄️)\s*/u,'');}
+    else type='info';
+  }
+  const ICONS={success:'check_circle',error:'error',warn:'warning',info:'bolt'};
+  const TITLES={success:'Berhasil',error:'Gagal',warn:'Perhatian',info:'Zigora-Secure'};
+  icon.textContent=ICONS[type]||'info';
+  titleEl.textContent=title||TITLES[type]||'Zigora-Secure';
+  msgEl.textContent=clean;
+
+  t.className='show '+type;
+  if(toastTimer)clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>{t.className='';},2800);
+}
+
+// ════════════════════════════════════════════════════════════
+//  SPLASH
+// ════════════════════════════════════════════════════════════
+function splash(){
+  const fill=document.getElementById('spFill'),start=Date.now();let prog=0;
+  function f(){
+    const t=Math.min((Date.now()-start)/3500,1);
+    prog+=(((1-Math.pow(1-t,3))*100)-prog)*.12;
+    fill.style.width=prog.toFixed(1)+'%';
+    if(t<1)requestAnimationFrame(f);
+    else{
+      const sp=document.getElementById('splash'),wr=document.getElementById('wrap');
+      setTimeout(()=>sp.classList.add('hide'),200);
+      setTimeout(()=>wr.classList.add('show'),320);
+      setTimeout(()=>sp.remove(),900);
+    }
+  }
+  requestAnimationFrame(f);
+}
+
+// ════════════════════════════════════════════════════════════
+//  DISPLAY PAGE — Resolution & DPI
+// ════════════════════════════════════════════════════════════
+let origW=0,origH=0,origDpi=0,pendingW=0,pendingH=0,pendingDpi=0;
+let cdTimer=null,cdInterval=null;
+
+async function readDeviceDisplay(){
+  const[sz,dn]=await Promise.all([sh('wm size 2>/dev/null'),sh('wm density 2>/dev/null')]);
+  const sm=sz.match(/(?:Physical|Override) size:\s*(\d+)x(\d+)/i)||sz.match(/(\d{3,4})x(\d{3,5})/);
+  const dm=dn.match(/(?:Physical|Override) density:\s*(\d+)/i)||dn.match(/(\d{2,4})/);
+  if(sm){origW=parseInt(sm[1]);origH=parseInt(sm[2]);}else{origW=1080;origH=2400;}
+  if(dm)origDpi=parseInt(dm[1]);else origDpi=420;
+  $s('curRes',origW+'×'+origH);$s('curDpi',origDpi+' dpi');
+  pendingW=origW;pendingH=origH;pendingDpi=origDpi;
+  const iW=document.getElementById('inW'),iH=document.getElementById('inH'),iD=document.getElementById('inDpi');
+  if(iW)iW.value=origW;if(iH)iH.value=origH;if(iD)iD.value=origDpi;
+  updatePreview();
+}
+
+function syncInputs(){
+  const iW=document.getElementById('inW'),iH=document.getElementById('inH'),iD=document.getElementById('inDpi');
+  const w=parseInt(iW?.value)||0,h=parseInt(iH?.value)||0,d=parseInt(iD?.value)||0;
+  if(w>0)pendingW=w;if(h>0)pendingH=h;if(d>0)pendingDpi=d;
+  // match preset
+  document.querySelectorAll('.preset-chip').forEach(c=>{
+    c.classList.toggle('sel',parseInt(c.dataset.w)===pendingW&&parseInt(c.dataset.h)===pendingH&&parseInt(c.dataset.dpi)===pendingDpi);
+  });
+  document.querySelectorAll('.disp-dpi-tag').forEach(t=>{
+    t.classList.toggle('sel',parseInt(t.textContent)===pendingDpi);
+  });
+  updatePreview();
+}
+
+function setDpiQuick(v){
+  pendingDpi=v;
+  const iD=document.getElementById('inDpi');if(iD)iD.value=v;
+  document.querySelectorAll('.disp-dpi-tag').forEach(t=>t.classList.toggle('sel',parseInt(t.textContent)===v));
+  document.querySelectorAll('.preset-chip').forEach(c=>{
+    c.classList.toggle('sel',parseInt(c.dataset.w)===pendingW&&parseInt(c.dataset.h)===pendingH&&parseInt(c.dataset.dpi)===pendingDpi);
+  });
+  updatePreview();
+}
+
+function selectPreset(el){
+  document.querySelectorAll('.preset-chip').forEach(c=>c.classList.remove('sel'));
+  el.classList.add('sel');
+  pendingW=parseInt(el.dataset.w);pendingH=parseInt(el.dataset.h);pendingDpi=parseInt(el.dataset.dpi);
+  const iW=document.getElementById('inW'),iH=document.getElementById('inH'),iD=document.getElementById('inDpi');
+  if(iW)iW.value=pendingW;if(iH)iH.value=pendingH;if(iD)iD.value=pendingDpi;
+  document.querySelectorAll('.disp-dpi-tag').forEach(t=>t.classList.toggle('sel',parseInt(t.textContent)===pendingDpi));
+  updatePreview();
+}
+
+function updatePreview(){
+  $s('mockRes',pendingW+' × '+pendingH);
+  $s('mockDpi',pendingDpi+' dpi');
+  $s('prevRes',(pendingW||'—')+'×'+(pendingH||'—')+'px');
+  $s('prevDpi',(pendingDpi||'—')+' dpi');
+  const mock=document.getElementById('dispMock');
+  if(mock&&pendingW&&pendingH){
+    const ar=pendingW/pendingH;
+    mock.style.width=Math.min(60,Math.max(36,ar*90))+'%';
+  }
+  const badge=document.getElementById('dispBadge');
+  if(badge){
+    const changed=pendingW!==origW||pendingH!==origH||pendingDpi!==origDpi;
+    badge.textContent=changed?'MODIFIED':'DEFAULT';
+    badge.className='disp-badge '+(changed?'changed':'default');
+  }
+  $s('prevStatus',pendingW&&pendingH&&pendingDpi?'READY':'—');
+}
+
+function stopCountdown(){
+  if(cdTimer){clearTimeout(cdTimer);cdTimer=null;}
+  if(cdInterval){clearInterval(cdInterval);cdInterval=null;}
+  const cd=document.getElementById('dispCountdown');
+  if(cd)cd.classList.remove('show');
+  const btn=document.getElementById('btnDispPreview');
+  if(btn){btn.disabled=false;btn.innerHTML='<span class="material-symbols-rounded">visibility</span>PREVIEW 10s';}
+}
+
+async function dispPreview(){
+  if(!pendingW||!pendingH||!pendingDpi){showToast('⚠️ Isi resolusi & DPI dulu','warn','Display');return;}
+  // stop any previous countdown
+  stopCountdown();
+  const cd=document.getElementById('dispCountdown'),prog=document.getElementById('cdProg');
+  const btn=document.getElementById('btnDispPreview');
+  btn.disabled=true;btn.innerHTML='<span class="material-symbols-rounded">timer</span>REVERTING...';
+  // apply preview
+  showToast('⚡ Preview '+pendingW+'×'+pendingH+' '+pendingDpi+'dpi...','info','Display');
+  await sh('wm size '+pendingW+'x'+pendingH);
+  await sh('wm density '+pendingDpi);
+  const badge=document.getElementById('dispBadge');
+  if(badge){badge.textContent='PREVIEW';badge.className='disp-badge changed';}
+  $s('prevStatus','PREVIEW');
+  // show countdown
+  cd.classList.add('show');
+  const TOTAL=10,circumference=113;
+  let remaining=TOTAL;
+  $s('cdNum',remaining);
+  if(prog)prog.style.strokeDashoffset=0;
+  cdInterval=setInterval(()=>{
+    remaining--;
+    $s('cdNum',remaining);
+    if(prog)prog.style.strokeDashoffset=(circumference*(TOTAL-remaining)/TOTAL).toFixed(2);
+    if(remaining<=0){clearInterval(cdInterval);cdInterval=null;}
+  },1000);
+  // auto revert after 10s
+  cdTimer=setTimeout(async()=>{
+    cd.classList.remove('show');
+    showToast('🔄 Auto revert ke semula...','info','Display');
+    await sh('wm size '+origW+'x'+origH);
+    await sh('wm density '+origDpi);
+    if(badge){badge.textContent='DEFAULT';badge.className='disp-badge default';}
+    $s('prevStatus','REVERTED');
+    btn.disabled=false;btn.innerHTML='<span class="material-symbols-rounded">visibility</span>PREVIEW 10s';
+    showToast('✅ Display kembali ke default!','success','Display');
+  },10000);
+}
+
+async function dispApply(){
+  if(!pendingW||!pendingH||!pendingDpi){showToast('⚠️ Isi resolusi & DPI dulu','warn','Display');return;}
+  stopCountdown();
+  showToast('⚡ Apply '+pendingW+'×'+pendingH+' '+pendingDpi+'dpi...','info','Display');
+  await sh('wm size '+pendingW+'x'+pendingH);
+  await sh('wm density '+pendingDpi);
+  await new Promise(r=>setTimeout(r,500));
+  const badge=document.getElementById('dispBadge');
+  if(badge){badge.textContent='APPLIED';badge.className='disp-badge applied';}
+  $s('curRes',pendingW+'×'+pendingH);$s('curDpi',pendingDpi+' dpi');
+  $s('prevStatus','APPLIED');
+  origW=pendingW;origH=pendingH;origDpi=pendingDpi;
+  showToast('✅ '+pendingW+'×'+pendingH+' · '+pendingDpi+'dpi applied!','success','Display');
+}
+
+async function dispReset(){
+  stopCountdown();
+  showToast('🔄 Reset ke default...','info','Display');
+  await sh('wm size reset');await sh('wm density reset');
+  await new Promise(r=>setTimeout(r,500));
+  await readDeviceDisplay();
+  const badge=document.getElementById('dispBadge');
+  if(badge){badge.textContent='DEFAULT';badge.className='disp-badge default';}
+  $s('prevStatus','IDLE');
+  showToast('✅ Display reset ke default!','success','Display');
+}
+
+// ════════════════════════════════════════════════════════════
+//  LICENSE
+// ════════════════════════════════════════════════════════════
+const LIC_CH='0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+function licChecksum(body){
+  let sum=0;
+  for(let i=0;i<body.length;i++) sum += body.charCodeAt(i) * (i+1);
+  return LIC_CH[sum % 36];
+}
+function validateLicenseKey(key){
+  if(!key) return false;
+  key = key.trim().toUpperCase().replace(/\s+/g,'');
+  const m = key.match(/^ZGR-([A-Z0-9]{4})-([A-Z0-9]{4})-([A-Z0-9])$/);
+  if(!m) return false;
+  return licChecksum(m[1]+m[2]) === m[3];
+}
+
+// ════════════════════════════════════════════════════════════
+//  LICENSE STORAGE — file di /data (tetap setelah wm size/density)
+// ════════════════════════════════════════════════════════════
+const LIC_FILE='/data/local/tmp/.zigora_lic';
+
+async function saveLicense(key){
+  // Simpan ke file permanen DAN localStorage sebagai fallback
+  try{ await sh('mkdir -p /data/local/tmp && echo "'+key+'" > '+LIC_FILE); }catch(_){}
+  try{ localStorage.setItem('zigora_license',key); }catch(_){}
+}
+
+async function loadLicense(){
+  // 1. Coba baca dari file (survive WebView restart setelah wm size)
+  try{
+    const f=await sh('cat '+LIC_FILE+' 2>/dev/null');
+    if(f&&f.trim()&&validateLicenseKey(f.trim())) return f.trim();
+  }catch(_){}
+  // 2. Fallback localStorage
+  try{
+    const s=localStorage.getItem('zigora_license');
+    if(s&&validateLicenseKey(s)) return s;
+  }catch(_){}
+  return null;
+}
+
+function startApp(){
+  document.getElementById('splash').classList.add('boot');
+  buildDnsList();
+  splash();
+  devInfo();
+  readDeviceDisplay();
+  tick();
+  setInterval(tick,3000);
+  checkStatus();setInterval(checkStatus,8000);
+  updateNavIndicator();
+}
+
+function showGate(){
+  const gate=document.getElementById('licenseGate');
+  if(gate) gate.style.display='flex';
+  const inp=document.getElementById('licInput');
+  if(inp) inp.addEventListener('keydown',e=>{if(e.key==='Enter')activateLicense();});
+}
+
+function activateLicense(){
+  const input=document.getElementById('licInput'),err=document.getElementById('licErr');
+  const key=input.value.trim().toUpperCase();
+  if(validateLicenseKey(key)){
+    err.textContent='';
+    saveLicense(key); // async, tidak perlu await — key langsung valid
+    const gate=document.getElementById('licenseGate');
+    gate.classList.add('hide');
+    setTimeout(()=>{gate.remove();startApp();},500);
+  }else{
+    err.textContent='❌ License Key tidak valid. Periksa kembali.';
+    input.classList.remove('err');
+    void input.offsetWidth;
+    input.classList.add('err');
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+//  APP-LIKE: Back button → balik ke dashboard dulu, bukan exit
+// ════════════════════════════════════════════════════════════
+history.pushState({page:'dashboard'},'','');
+window.addEventListener('popstate',()=>{
+  if(curPage!=='dashboard'){
+    goPage('dashboard');
+    history.pushState({page:'dashboard'},'','');
+  }
+});
+function navPushState(id){
+  if(history.state?.page!==id) history.pushState({page:id},'','');
+}
+
+// ════════════════════════════════════════════════════════════
+//  BOOT — tunggu sh() siap sebelum cek license
+// ════════════════════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded',async()=>{
+  import('ax://kernelsu.js').then(({fullScreen})=>fullScreen(true)).catch(()=>{
+    try{window.ksu?.fullScreen?.(true);}catch(_){}
+  });
+
+  // ── Shizuku permission gate (hanya berlaku di APK native) ──
+  if(window.AndroidShell?.isShizukuAvailable){
+    const avail=window.AndroidShell.isShizukuAvailable();
+    if(!avail){
+      showToast('⚠️ Shizuku belum aktif. Buka Shizuku app dulu.','warn','Shizuku');
+    }else if(!window.AndroidShell.hasPermission()){
+      window.AndroidShell.requestPermission();
+      // Tunggu user approve dialog Shizuku (polling max 15 detik)
+      for(let i=0;i<30;i++){
+        await new Promise(r=>setTimeout(r,500));
+        if(window.AndroidShell.hasPermission()) break;
+      }
+    }
+  }
+
+  // Tunggu shell bridge siap (max 3 detik)
+  let shReady=false;
+  for(let i=0;i<15;i++){
+    try{
+      const t=await sh('echo ok');
+      if(t&&t.trim()==='ok'){shReady=true;break;}
+    }catch(_){}
+    await new Promise(r=>setTimeout(r,200));
+  }
+
+  // Cek license dari file/localStorage
+  const saved = shReady ? await loadLicense() : null;
+
+  if(saved){
+    // License valid — langsung masuk app
+    const gate=document.getElementById('licenseGate');
+    if(gate) gate.remove();
+    startApp();
+  } else {
+    // Tampilkan gate
+    showGate();
+  }
+});
+</script>
+</body>
+</html>
